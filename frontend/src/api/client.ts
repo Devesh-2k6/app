@@ -10,7 +10,6 @@ export type ApiRequestOptions = Omit<RequestInit, "body"> & {
 
 /**
  * Typed fetch wrapper for the FastAPI backend.
- * Centralizes base URL, headers, JSON parsing, and error mapping.
  */
 export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
   const { json: jsonBody, body: explicitBody, headers: initHeaders, ...rest } = options;
@@ -29,24 +28,13 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
     body = JSON.stringify(jsonBody);
   }
 
-  // Inject JWT token from localStorage
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("access_token");
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-  }
-
-  console.log(`🚀 API Request: ${options.method || 'GET'} ${url}`);
   const res = await fetch(url, { ...rest, headers, body });
-  console.log(`📡 API Response: ${res.status} ${res.statusText}`);
 
   const contentType = res.headers.get("content-type") ?? "";
   const isJson = contentType.includes("application/json");
   const parsedBody = isJson ? await res.json().catch(() => null) : await res.text();
 
   if (!res.ok) {
-    console.error(`❌ API Error [${res.status}]:`, parsedBody);
     const message = parseApiErrorMessage(res.status, parsedBody);
     throw new ApiError(res.status, parsedBody, message);
   }

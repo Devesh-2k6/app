@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Fix Leaflet's default icon path issues in Webpack/Next by using a custom DivIcon
-// We use a beautiful custom CSS pin for a premium look
 const customIcon = new L.DivIcon({
   className: "custom-map-marker",
   html: `
@@ -20,44 +18,27 @@ const customIcon = new L.DivIcon({
       position: relative;
       top: -12px;
       left: -12px;
-    ">
-      <div style="
-        position: absolute;
-        bottom: -6px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-top: 6px solid white;
-      "></div>
-      <div style="
-        position: absolute;
-        bottom: -3px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 4px solid transparent;
-        border-right: 4px solid transparent;
-        border-top: 4px solid #10b981;
-      "></div>
-    </div>
+    "></div>
   `,
   iconSize: [24, 24],
   iconAnchor: [12, 24],
   popupAnchor: [0, -24],
 });
 
-// Helper component to center the map when coordinates change
-function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
+function RecenterMap({ lat, lng, zoom }: { lat: number; lng: number; zoom: number }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo([lat, lng], 15, { animate: true, duration: 1.5 });
-  }, [lat, lng, map]);
+    map.flyTo([lat, lng], zoom, { animate: true, duration: 1.5 });
+  }, [lat, lng, zoom, map]);
   return null;
 }
+
+export type MapMarker = {
+  id: string;
+  lat: number;
+  lng: number;
+  label: string;
+};
 
 export type MapProps = {
   lat: number;
@@ -65,30 +46,56 @@ export type MapProps = {
   zoom?: number;
   popupText?: string;
   className?: string;
+  markers?: MapMarker[];
+  onMarkerClick?: (marker: MapMarker) => void;
 };
 
-export default function MapComponent({ lat, lng, zoom = 14, popupText, className = "w-full h-full" }: MapProps) {
+export default function MapComponent({
+  lat,
+  lng,
+  zoom = 14,
+  popupText,
+  className = "w-full h-full",
+  markers,
+  onMarkerClick,
+}: MapProps) {
+  const points =
+    markers && markers.length > 0
+      ? markers
+      : [{ id: "center", lat, lng, label: popupText ?? "Location" }];
+
   return (
-    <div className={className} style={{ position: 'relative', zIndex: 0 }}>
-      <MapContainer 
-        center={[lat, lng]} 
-        zoom={zoom} 
-        scrollWheelZoom={true} 
+    <div className={className} style={{ position: "relative", zIndex: 0 }}>
+      <MapContainer
+        center={[lat, lng]}
+        zoom={zoom}
+        scrollWheelZoom
         style={{ height: "100%", width: "100%", borderRadius: "inherit" }}
-        attributionControl={false} // Cleaner look
+        attributionControl={false}
       >
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
+          attribution='&copy; OpenStreetMap &copy; CARTO'
         />
-        <Marker position={[lat, lng]} icon={customIcon}>
-          {popupText && (
-            <Popup className="premium-popup">
-              <span className="font-semibold text-gray-900">{popupText}</span>
+        {points.map((m) => (
+          <Marker
+            key={m.id}
+            position={[m.lat, m.lng]}
+            icon={customIcon}
+            eventHandlers={
+              onMarkerClick
+                ? {
+                    click: () => onMarkerClick(m),
+                  }
+                : undefined
+            }
+          >
+            <Popup>
+              <span className="font-semibold text-gray-900">{m.label}</span>
             </Popup>
-          )}
-        </Marker>
-        <RecenterMap lat={lat} lng={lng} />
+          </Marker>
+        ))}
+        <RecenterMap lat={lat} lng={lng} zoom={zoom} />
       </MapContainer>
     </div>
   );

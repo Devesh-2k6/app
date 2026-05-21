@@ -86,7 +86,7 @@ export default function ShopSetupPage() {
   // Animation variants
   const pageVariants = {
     initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } },
     exit: { opacity: 0, y: -20, transition: { duration: 0.3 } }
   };
 
@@ -234,7 +234,7 @@ export default function ShopSetupPage() {
                           {latitude.toFixed(4)}, {longitude?.toFixed(4)}
                         </p>
                         <div className="h-48 w-full rounded-xl overflow-hidden border border-blue-200 dark:border-blue-700 shadow-inner">
-                          <Map lat={latitude} lng={longitude} zoom={15} popupText={shopName || "Your Shop Location"} />
+                          <Map lat={latitude} lng={longitude ?? 0} zoom={15} popupText={shopName || "Your Shop Location"} />
                         </div>
                       </div>
                     )}

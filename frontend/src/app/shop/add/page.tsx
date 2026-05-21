@@ -160,7 +160,7 @@ export default function AddProduct() {
         voice_note_url: audioBase64, // Now fully supported!
       };
 
-      // Create product. The backend infers the shop_id from the authenticated user token.
+      // Backend assigns shop_id from your shop (auth will scope this later).
       await createProduct(productData);
       
       router.push("/shop/products");

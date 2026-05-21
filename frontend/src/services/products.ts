@@ -1,46 +1,44 @@
 import { apiRequest } from "@/api/client";
-import type { ApiProduct } from "@/types/product";
+import type { ApiProduct, ApiProductCreate } from "@/types/product";
 
 export type GetProductsParams = {
   skip?: number;
   limit?: number;
-  /** When true (default), backend omits products past expiry_date */
   hideExpired?: boolean;
-  shopId?: number;
+  shopId?: string;
 };
 
-/**
- * Fetches active products from the backend (includes nested shop when available).
- */
 export async function getProducts(params: GetProductsParams = {}): Promise<ApiProduct[]> {
   const search = new URLSearchParams();
   if (params.skip != null) search.set("skip", String(params.skip));
   if (params.limit != null) search.set("limit", String(params.limit));
-  if (params.shopId != null) search.set("shop_id", String(params.shopId));
+  if (params.shopId) search.set("shop_id", params.shopId);
   if (params.hideExpired === false) {
     search.set("hide_expired", "false");
   }
-  const query = search.size > 0 ? `?${search.toString()}` : "";
-  return apiRequest<ApiProduct[]>(`/products/${query}`);
+  const qs = search.toString();
+  const path = qs ? `/products/?${qs}` : "/products/";
+  return apiRequest<ApiProduct[]>(path);
 }
 
-/**
- * Creates a new product for a shop.
- */
-export async function createProduct(product: import("@/types/product").ApiProductCreate): Promise<ApiProduct> {
-  return apiRequest<ApiProduct>(`/products/`, {
+export async function createProduct(product: ApiProductCreate): Promise<ApiProduct> {
+  return apiRequest<ApiProduct>("/products/", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(product),
+    json: product,
   });
 }
 
-/**
- * Deletes a product.
- */
-export async function deleteProduct(productId: number): Promise<void> {
+export async function updateProduct(
+  productId: string,
+  product: ApiProductCreate
+): Promise<ApiProduct> {
+  return apiRequest<ApiProduct>(`/products/${productId}`, {
+    method: "PUT",
+    json: product,
+  });
+}
+
+export async function deleteProduct(productId: string): Promise<void> {
   await apiRequest(`/products/${productId}`, {
     method: "DELETE",
   });

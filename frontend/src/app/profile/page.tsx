@@ -1,26 +1,12 @@
 "use client";
 
-import { useAuth } from "@/contexts/AuthContext";
-import { LogOut, Heart, Bell, Settings, ChevronLeft } from "lucide-react";
+import { Heart, Bell, Settings, ChevronLeft } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
-  const { role, logout, name, email } = useAuth();
-  const router = useRouter();
-
-  if (role !== "customer") {
-    return null; // Middleware will catch this anyway, but just in case
-  }
-
-  const handleLogout = () => {
-    logout();
-    router.push("/");
-  };
-
-  const displayName = name || "Customer";
-  const displayEmail = email || "customer@example.com";
-  const initial = displayName.charAt(0).toUpperCase();
+  const displayName = "Customer";
+  const displayEmail = "customer@example.com";
+  const initial = "C";
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 max-w-2xl mx-auto pb-20">
@@ -60,13 +46,12 @@ export default function ProfilePage() {
           </button>
         </div>
 
-        <button 
-          onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 py-4 rounded-2xl font-bold hover:bg-red-100 dark:hover:bg-red-500/20 transition"
+        <Link
+          href="/"
+          className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 py-4 rounded-2xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition"
         >
-          <LogOut size={20} />
-          Sign Out
-        </button>
+          ← Back to Home
+        </Link>
       </main>
     </div>
   );

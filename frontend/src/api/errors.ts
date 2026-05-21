@@ -34,8 +34,13 @@ export function getErrorMessage(error: unknown): string {
 }
 
 export function parseApiErrorMessage(status: number, body: unknown): string {
-  if (body && typeof body === "object" && "detail" in body) {
-    return formatFastApiDetail((body as { detail: unknown }).detail);
+  if (body && typeof body === "object") {
+    if ("message" in body && typeof (body as { message: unknown }).message === "string") {
+      return (body as { message: string }).message;
+    }
+    if ("detail" in body) {
+      return formatFastApiDetail((body as { detail: unknown }).detail);
+    }
   }
   return `Request failed (${status})`;
 }

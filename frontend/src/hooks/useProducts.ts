@@ -15,7 +15,11 @@ export type UseProductsResult = {
   refetch: () => Promise<void>;
 };
 
-export function useProducts(options?: { limit?: number; shopId?: number; hideExpired?: boolean }): UseProductsResult {
+export function useProducts(options?: {
+  limit?: number;
+  shopId?: string;
+  hideExpired?: boolean;
+}): UseProductsResult {
   const limit = options?.limit ?? 100;
   const shopId = options?.shopId;
   const hideExpired = options?.hideExpired;

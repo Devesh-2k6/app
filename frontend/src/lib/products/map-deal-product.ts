@@ -1,14 +1,11 @@
 import type { ApiProduct } from "@/types/product";
 import type { DealProductCardProps } from "@/components/products/DealProductCard";
 
-/**
- * Maps an ApiProduct to the props expected by DealProductCard.
- */
 export function buildDealProductCardProps(
   product: ApiProduct,
   index: number,
-  playingId: number | null,
-  onTogglePlay: (id: number, e: React.MouseEvent) => void
+  playingId: string | null,
+  onTogglePlay: (id: string, e: React.MouseEvent) => void
 ): DealProductCardProps {
   const expiryDate = new Date(product.expiry_date);
   const now = new Date();
@@ -28,13 +25,16 @@ export function buildDealProductCardProps(
     expiryLabel = `${diffDays}d left`;
   }
 
-  const discountPercent = product.original_price > 0
-    ? Math.round(((product.original_price - product.discount_price) / product.original_price) * 100)
-    : 0;
+  const discountPercent =
+    product.original_price > 0
+      ? Math.round(
+          ((product.original_price - product.discount_price) / product.original_price) * 100
+        )
+      : 0;
 
   return {
     index,
-    id: Number(product.id) || index,
+    id: product.id,
     name: product.name,
     imageUrl: product.front_image_url,
     originalPrice: product.original_price,

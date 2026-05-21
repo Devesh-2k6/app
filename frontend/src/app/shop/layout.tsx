@@ -1,17 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Package, PlusCircle, Settings, LogOut, Menu, X, Leaf, Bell, Loader2 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { usePathname } from "next/navigation";
+import { LayoutDashboard, Package, PlusCircle, Settings, LogOut, Menu, X, Leaf, Bell } from "lucide-react";
 
 export default function ShopLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
-  const { logout, name, email, role, isLoading } = useAuth();
 
   const navigation = [
     { name: 'Dashboard', href: '/shop', icon: LayoutDashboard },
@@ -20,29 +17,11 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
     { name: 'Settings', href: '/shop/settings', icon: Settings },
   ];
 
-  // Access Control
-  useEffect(() => {
-    if (!isLoading && role !== "shop_owner") {
-      router.replace(role ? "/" : "/auth");
-    }
-  }, [isLoading, role, router]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <Loader2 className="animate-spin text-emerald-500" size={48} />
-      </div>
-    );
-  }
-
-  if (role !== "shop_owner") return null;
-
   const closeSidebar = () => setIsSidebarOpen(false);
 
-  // Fallbacks if not fully loaded or mocked
-  const displayName = name || "Shop Owner";
-  const displayEmail = email || "owner@shop.com";
-  const initial = displayName.charAt(0).toUpperCase();
+  const displayName = "Shop Owner";
+  const displayEmail = "owner@shop.com";
+  const initial = "S";
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
@@ -91,16 +70,13 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
         </div>
 
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <button 
-            onClick={async () => {
-              await logout();
-              router.push("/auth");
-            }}
+          <Link
+            href="/"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-50 w-full dark:text-gray-300 dark:hover:bg-gray-700/50 transition-all text-left"
           >
             <LogOut size={20} className="text-gray-400 dark:text-gray-500" />
-            Sign Out
-          </button>
+            Back to Home
+          </Link>
         </div>
       </aside>
 
@@ -145,17 +121,14 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
                         <Settings size={16} />
                         Settings
                       </Link>
-                      <button 
-                        onClick={async () => {
-                          setIsProfileOpen(false);
-                          await logout();
-                          router.push("/auth");
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 w-full text-left"
+                      <Link
+                        href="/"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                       >
                         <LogOut size={16} />
-                        Sign Out
-                      </button>
+                        Back to Home
+                      </Link>
                     </div>
                   </div>
                 </>
