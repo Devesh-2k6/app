@@ -1,7 +1,7 @@
 import { apiRequest } from "@/api/client";
 import type { ApiReservation } from "@/types/product";
 
-export async function createReservation(productId: string, quantity: int): Promise<ApiReservation> {
+export async function createReservation(productId: string, quantity: number): Promise<ApiReservation> {
   return apiRequest<ApiReservation>("/reservations/", {
     method: "POST",
     json: { product_id: productId, quantity },
