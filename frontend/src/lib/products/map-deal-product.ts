@@ -5,7 +5,8 @@ export function buildDealProductCardProps(
   product: ApiProduct,
   index: number,
   playingId: string | null,
-  onTogglePlay: (id: string, e: React.MouseEvent) => void
+  onTogglePlay: (id: string, e: React.MouseEvent) => void,
+  onReserve?: (id: string) => void
 ): DealProductCardProps {
   const expiryDate = new Date(product.expiry_date);
   const now = new Date();
@@ -25,10 +26,12 @@ export function buildDealProductCardProps(
     expiryLabel = `${diffDays}d left`;
   }
 
+  const actualPrice = product.current_price !== null ? product.current_price : product.discount_price;
+
   const discountPercent =
     product.original_price > 0
       ? Math.round(
-          ((product.original_price - product.discount_price) / product.original_price) * 100
+          ((product.original_price - actualPrice) / product.original_price) * 100
         )
       : 0;
 
@@ -39,13 +42,18 @@ export function buildDealProductCardProps(
     imageUrl: product.front_image_url,
     originalPrice: product.original_price,
     discountPrice: product.discount_price,
+    currentPrice: actualPrice,
+    isDynamicPricing: product.auto_discount_enabled && actualPrice < product.discount_price,
+    isSurpriseBag: product.is_surprise_bag,
     discountPercent,
     expiryLabel,
     expiryIsExpired,
+    shopId: product.shop_id,
     shopSubtitle: product.shop?.name ?? "Local Shop",
     quantity: product.quantity,
     hasVoiceNote: !!product.voice_note_url,
     playingId,
     onTogglePlay,
+    onReserve,
   };
 }

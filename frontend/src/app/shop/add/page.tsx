@@ -6,8 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getErrorMessage } from "@/api/errors";
-import { createProduct } from "@/services/products";
-import { ApiProductCreate } from "@/types/product";
+import { createProduct, uploadImage } from "@/services/products";
+import { ApiProductCreate, ProductCategory } from "@/types/product";
 
 export default function AddProduct() {
   const router = useRouter();
@@ -17,10 +17,17 @@ export default function AddProduct() {
   const [discountPrice, setDiscountPrice] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [expiryDate, setExpiryDate] = useState("");
+  const [category, setCategory] = useState<ProductCategory>("OTHER");
   
   const [frontImage, setFrontImage] = useState<string | null>(null);
   const [expiryImage, setExpiryImage] = useState<string | null>(null);
-  
+  const [frontImageFile, setFrontImageFile] = useState<File | null>(null);
+  const [expiryImageFile, setExpiryImageFile] = useState<File | null>(null);
+
+  const [isSurpriseBag, setIsSurpriseBag] = useState(false);
+  const [autoDiscountEnabled, setAutoDiscountEnabled] = useState(false);
+  const [autoDiscountMinPrice, setAutoDiscountMinPrice] = useState("");
+
   // Voice Recording State
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -46,12 +53,17 @@ export default function AddProduct() {
     };
   }, [audioUrl]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string) => void) => {
+  const handleImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>, 
+    setPreview: (val: string) => void,
+    setFile: (file: File) => void
+  ) => {
     const file = e.target.files?.[0];
     if (file) {
+      setFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setter(reader.result as string);
+        setPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -142,7 +154,7 @@ export default function AddProduct() {
     e.preventDefault();
     setError("");
 
-    if (!productName || !originalPrice || !discountPrice || !quantity || !expiryDate || !frontImage || !expiryImage) {
+    if (!productName || !originalPrice || !discountPrice || !quantity || !expiryDate || !frontImageFile || !expiryImageFile) {
       setError("Please fill out all mandatory fields and upload both photos.");
       return;
     }
@@ -150,18 +162,26 @@ export default function AddProduct() {
     setIsSubmitting(true);
 
     try {
+      // 1. Upload images first
+      const uploadedFrontUrl = await uploadImage(frontImageFile);
+      const uploadedExpiryUrl = await uploadImage(expiryImageFile);
+
+      // 2. Create product with the returned URLs
       const productData: ApiProductCreate = {
         name: productName,
         original_price: parseFloat(originalPrice),
         discount_price: parseFloat(discountPrice),
         quantity: parseInt(quantity, 10),
         expiry_date: new Date(expiryDate).toISOString(),
-        front_image_url: frontImage,
-        expiry_image_url: expiryImage,
-        voice_note_url: audioBase64, // Now fully supported!
+        category,
+        front_image_url: uploadedFrontUrl,
+        expiry_image_url: uploadedExpiryUrl,
+        voice_note_url: audioBase64, // Still base64 for now, can be updated later
+        is_surprise_bag: isSurpriseBag,
+        auto_discount_enabled: autoDiscountEnabled,
+        auto_discount_min_price: autoDiscountMinPrice ? parseFloat(autoDiscountMinPrice) : null,
       };
 
-      // Backend assigns shop_id from your shop (auth will scope this later).
       await createProduct(productData);
       
       router.push("/shop/products");
@@ -216,7 +236,7 @@ export default function AddProduct() {
                   type="file" 
                   accept="image/*" 
                   ref={frontImageInputRef} 
-                  onChange={(e) => handleImageUpload(e, setFrontImage)} 
+                  onChange={(e) => handleImageUpload(e, setFrontImage, setFrontImageFile)} 
                   className="hidden" 
                 />
               </div>
@@ -240,7 +260,7 @@ export default function AddProduct() {
                   type="file" 
                   accept="image/*" 
                   ref={expiryImageInputRef} 
-                  onChange={(e) => handleImageUpload(e, setExpiryImage)} 
+                  onChange={(e) => handleImageUpload(e, setExpiryImage, setExpiryImageFile)} 
                   className="hidden" 
                 />
               </div>
@@ -264,6 +284,23 @@ export default function AddProduct() {
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Category <span className="text-red-500">*</span></label>
+              <select 
+                value={category}
+                onChange={(e) => setCategory(e.target.value as ProductCategory)}
+                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+              >
+                <option value="BAKERY">Bakery</option>
+                <option value="DAIRY">Dairy</option>
+                <option value="PRODUCE">Produce</option>
+                <option value="MEAT">Meat</option>
+                <option value="PANTRY">Pantry</option>
+                <option value="PREPARED_FOOD">Prepared Food</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Original Price (₹) <span className="text-red-500">*</span></label>
@@ -282,7 +319,7 @@ export default function AddProduct() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-red-600 dark:text-red-400 mb-1.5">Discount Price (₹) <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-red-600 dark:text-red-400 mb-1.5">Starting Discount Price (₹) <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <span className="text-red-500 font-bold">₹</span>
@@ -297,6 +334,55 @@ export default function AddProduct() {
                   />
                 </div>
               </div>
+            </div>
+
+            {/* NEW FEATURES SECTION */}
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800 rounded-xl space-y-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={isSurpriseBag}
+                  onChange={(e) => setIsSurpriseBag(e.target.checked)}
+                  className="w-5 h-5 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500"
+                />
+                <div>
+                  <div className="font-semibold text-gray-900 dark:text-white">List as a Surprise Bag 🛍️</div>
+                  <div className="text-xs text-gray-500">Sell a bundle of items for a flat rate without listing every detail.</div>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer mt-3">
+                <input 
+                  type="checkbox" 
+                  checked={autoDiscountEnabled}
+                  onChange={(e) => setAutoDiscountEnabled(e.target.checked)}
+                  className="w-5 h-5 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500"
+                />
+                <div>
+                  <div className="font-semibold text-gray-900 dark:text-white">Enable Auto-Discount (Dynamic Pricing) ⏱️</div>
+                  <div className="text-xs text-gray-500">Automatically lower the price as expiry approaches.</div>
+                </div>
+              </label>
+
+              {autoDiscountEnabled && (
+                <div className="pl-8 pt-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Minimum Price allowed (₹)</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                      <span className="text-gray-400 font-bold">₹</span>
+                    </div>
+                    <input 
+                      type="number" 
+                      step="0.01"
+                      value={autoDiscountMinPrice}
+                      onChange={(e) => setAutoDiscountMinPrice(e.target.value)}
+                      placeholder="e.g. 10.00" 
+                      className="w-full bg-white dark:bg-gray-900 border border-emerald-200 dark:border-emerald-700 rounded-xl pl-9 pr-4 py-2 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                    />
+                  </div>
+                  <p className="text-xs text-emerald-600 mt-1">Price will drop from ₹{discountPrice || '0'} down to ₹{autoDiscountMinPrice || '0'} over the last 24 hours.</p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

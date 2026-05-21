@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Tag, MapPin, Bell, User } from "lucide-react";
+import { Tag, MapPin, Bell, User, ShieldCheck } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/deals", label: "Deals", icon: Tag },
   { href: "/map", label: "Map", icon: MapPin },
+  { href: "/reservations", label: "Orders", icon: ShieldCheck },
   { href: "/notifications", label: "Alerts", icon: Bell },
   { href: "/profile", label: "Profile", icon: User },
 ];

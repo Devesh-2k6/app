@@ -14,6 +14,7 @@ import {
   Leaf,
   Bell,
   Loader2,
+  ShieldCheck,
 } from "lucide-react";
 
 import { useAuth } from "@/contexts/AuthenticationContext";
@@ -29,6 +30,7 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
     { name: "Dashboard", href: "/shop", icon: LayoutDashboard },
     { name: "Products", href: "/shop/products", icon: Package },
     { name: "Add Product", href: "/shop/add", icon: PlusCircle },
+    { name: "Reservations", href: "/shop/reservations", icon: ShieldCheck },
     { name: "Settings", href: "/shop/settings", icon: Settings },
   ];
 

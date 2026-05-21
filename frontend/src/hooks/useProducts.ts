@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { getErrorMessage } from "@/api/errors";
 import { getProducts } from "@/services/products";
-import type { ApiProduct } from "@/types/product";
+import type { ApiProduct, ProductCategory } from "@/types/product";
 
 export type ProductsLoadStatus = "loading" | "success" | "empty" | "error";
 
@@ -19,10 +19,20 @@ export function useProducts(options?: {
   limit?: number;
   shopId?: string;
   hideExpired?: boolean;
+  q?: string;
+  category?: ProductCategory;
+  lat?: number;
+  lng?: number;
+  radius_km?: number;
 }): UseProductsResult {
   const limit = options?.limit ?? 100;
   const shopId = options?.shopId;
   const hideExpired = options?.hideExpired;
+  const q = options?.q;
+  const category = options?.category;
+  const lat = options?.lat;
+  const lng = options?.lng;
+  const radius_km = options?.radius_km;
 
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [status, setStatus] = useState<ProductsLoadStatus>("loading");
@@ -32,7 +42,7 @@ export function useProducts(options?: {
     setStatus("loading");
     setErrorMessage(null);
     try {
-      const data = await getProducts({ limit, shopId, hideExpired });
+      const data = await getProducts({ limit, shopId, hideExpired, q, category, lat, lng, radius_km });
       if (data.length === 0) {
         setProducts([]);
         setStatus("empty");
@@ -45,7 +55,7 @@ export function useProducts(options?: {
       setErrorMessage(getErrorMessage(e));
       setStatus("error");
     }
-  }, [limit, shopId, hideExpired]);
+  }, [limit, shopId, hideExpired, q, category, lat, lng, radius_km]);
 
   useEffect(() => {
     void load();

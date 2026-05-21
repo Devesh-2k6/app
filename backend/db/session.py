@@ -13,7 +13,10 @@ DEFAULT_URL = f"sqlite:///{_data_dir / 'freshsave.db'}"
 
 
 def get_database_url() -> str:
-    return os.getenv("DATABASE_URL", DEFAULT_URL).strip()
+    url = os.getenv("DATABASE_URL", DEFAULT_URL).strip()
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+    return url
 
 
 def _create_engine():

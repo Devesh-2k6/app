@@ -1,5 +1,5 @@
 import { apiRequest } from "@/api/client";
-import type { ApiShopSummary } from "@/types/product";
+import type { ApiShopSummary, ApiAnalytics, ApiFollower, ApiReview } from "@/types/product";
 
 export type ShopWithDescription = ApiShopSummary & {
   description?: string | null;
@@ -40,5 +40,28 @@ export async function createShop(data: ShopUpdatePayload): Promise<ShopWithDescr
   return apiRequest<ShopWithDescription>("/shops/", {
     method: "POST",
     json: data,
+  });
+}
+
+export async function getShopAnalytics(): Promise<ApiAnalytics> {
+  return apiRequest<ApiAnalytics>("/shops/me/analytics");
+}
+
+export async function followShop(shopId: string): Promise<ApiFollower> {
+  return apiRequest<ApiFollower>(`/shops/${shopId}/follow`, { method: "POST" });
+}
+
+export async function unfollowShop(shopId: string): Promise<void> {
+  return apiRequest<void>(`/shops/${shopId}/follow`, { method: "DELETE" });
+}
+
+export async function getMyFollowing(): Promise<ApiFollower[]> {
+  return apiRequest<ApiFollower[]>("/users/me/following");
+}
+
+export async function leaveReview(shopId: string, rating: number, comment?: string): Promise<ApiReview> {
+  return apiRequest<ApiReview>(`/shops/${shopId}/reviews`, {
+    method: "POST",
+    json: { rating, comment },
   });
 }

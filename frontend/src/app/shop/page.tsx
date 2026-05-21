@@ -4,8 +4,9 @@ import { DollarSign, Package, AlertTriangle, TrendingUp, Store, MapPin } from "l
 import { useProducts } from "@/hooks/useProducts";
 import { useMemo, useState, useEffect } from "react";
 import { formatExpiryDisplay, isExpiringWithinHours } from "@/lib/products/formatters";
-import { getMyShop } from "@/services/shops";
+import { getMyShop, getShopAnalytics } from "@/services/shops";
 import type { ShopWithDescription } from "@/services/shops";
+import type { ApiAnalytics } from "@/types/product";
 import Link from "next/link";
 
 export default function ShopDashboardOverview() {
@@ -24,15 +25,18 @@ export default function ShopDashboardOverview() {
       });
   }, []);
 
+  const [analytics, setAnalytics] = useState<ApiAnalytics | null>(null);
+  useEffect(() => {
+    if (shopId) {
+      getShopAnalytics().then(setAnalytics).catch(console.error);
+    }
+  }, [shopId]);
+
   const [nowMs] = useState(() => Date.now());
   const { products } = useProducts({ shopId, limit: 100, hideExpired: true });
 
   const stats = useMemo(() => {
     const activeDeals = products.length;
-    const revenueSaved = products.reduce(
-      (acc, p) => acc + (p.original_price - p.discount_price),
-      0
-    );
     const expiringSoon = products.filter((p) =>
       isExpiringWithinHours(p.expiry_date, 24, nowMs)
     ).length;
@@ -40,9 +44,9 @@ export default function ShopDashboardOverview() {
     return [
       { name: "Active Deals", value: activeDeals.toString(), icon: Package, change: "+0", changeType: "positive" },
       { name: "Expiring Soon", value: expiringSoon.toString(), icon: AlertTriangle, change: "-0", changeType: "positive" },
-      { name: "Total Savings", value: `₹${revenueSaved.toFixed(0)}`, icon: TrendingUp, change: "0%", changeType: "positive" },
+      { name: "Total Revenue", value: `₹${(analytics?.total_revenue || 0).toFixed(0)}`, icon: DollarSign, change: "+12%", changeType: "positive" },
     ];
-  }, [products, nowMs]);
+  }, [products, nowMs, analytics]);
 
   if (!shop) {
     return (
@@ -106,20 +110,21 @@ export default function ShopDashboardOverview() {
             </div>
           </div>
         ))}
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hidden lg:block">
-          <DollarSign size={20} className="text-gray-400 mb-4" />
-          <h3 className="text-sm font-medium text-gray-500">Revenue (demo)</h3>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">—</p>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm lg:block">
+          <TrendingUp size={20} className="text-emerald-500 mb-4" />
+          <h3 className="text-sm font-medium text-gray-500">Items Saved</h3>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{analytics?.total_items_saved || 0}</p>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Deals Expiring Soon</h2>
-          <a href="/shop/products" className="text-sm font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400">
-            View all
-          </a>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Deals Expiring Soon</h2>
+            <a href="/shop/products" className="text-sm font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400">
+              View all
+            </a>
+          </div>
         <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {products.slice(0, 3).map((product) => {
             const expiry = formatExpiryDisplay(product.expiry_date);
@@ -164,6 +169,41 @@ export default function ShopDashboardOverview() {
               </Link>
             </div>
           )}
+        </div>
+      </div>
+
+        {/* RECENT REVIEWS */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+          <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Recent Reviews</h2>
+            <span className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
+              ★ {analytics?.average_rating || "0.0"} Avg
+            </span>
+          </div>
+          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+            {analytics?.recent_reviews?.slice(0, 4).map((review) => (
+              <div key={review.id} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex gap-1 text-emerald-500">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <span key={i}>{i < review.rating ? "★" : "☆"}</span>
+                    ))}
+                  </div>
+                  <span className="text-xs text-gray-400">
+                    {new Date(review.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-700 dark:text-gray-300 italic">
+                  "{review.comment || "No comment"}"
+                </p>
+              </div>
+            ))}
+            {(!analytics?.recent_reviews || analytics.recent_reviews.length === 0) && (
+              <div className="px-6 py-8 text-center text-sm text-gray-500">
+                No reviews yet. Keep saving meals to get rated!
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

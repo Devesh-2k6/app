@@ -22,18 +22,35 @@ import { DealProductCard } from "@/components/products/DealProductCard";
 import { getErrorMessage } from "@/api/errors";
 import { useProducts } from "@/hooks/useProducts";
 import { buildDealProductCardProps } from "@/lib/products/map-deal-product";
+import { createReservation } from "@/services/reservations";
+import { addFavorite, removeFavorite, getFavorites } from "@/services/products";
+import { getMyFollowing, followShop, unfollowShop } from "@/services/shops";
 import { BottomNav } from "@/components/BottomNav";
+import type { ProductCategory } from "@/types/product";
 
-const FILTERS = ["All", "Bakery", "Dairy", "Fruits", "Vegetables", "Snacks"];
+const FILTERS = ["All", "BAKERY", "DAIRY", "PRODUCE", "MEAT", "PANTRY", "PREPARED_FOOD", "OTHER"];
 
 export default function CustomerDealsPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const { products, status, errorMessage, refetch } = useProducts({ hideExpired: true });
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [lat, setLat] = useState<number | undefined>();
+  const [lng, setLng] = useState<number | undefined>();
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [following, setFollowing] = useState<Set<string>>(new Set());
+
+  const { products, status, errorMessage, refetch } = useProducts({ 
+    hideExpired: true,
+    q: search || undefined,
+    category: activeFilter === "All" ? undefined : (activeFilter as ProductCategory),
+    lat,
+    lng,
+    radius_km: lat ? 50 : undefined
+  });
+
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -47,6 +64,73 @@ export default function CustomerDealsPage() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // Fetch favorites on load
+  useEffect(() => {
+    if (user) {
+      getFavorites().then(favs => {
+        setFavorites(new Set(favs.map(f => f.product_id)));
+      }).catch(console.error);
+      
+      getMyFollowing().then(fols => {
+        setFollowing(new Set(fols.map(f => f.shop_id)));
+      }).catch(console.error);
+    }
+  }, [user]);
+
+  const handleToggleFavorite = async (id: string, isFav: boolean, e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) {
+      router.push("/auth?role=customer&tab=login");
+      return;
+    }
+    try {
+      if (isFav) {
+        await removeFavorite(id);
+        setFavorites(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      } else {
+        await addFavorite(id);
+        setFavorites(prev => {
+          const next = new Set(prev);
+          next.add(id);
+          return next;
+        });
+      }
+    } catch (err: any) {
+      alert(err.message || "Failed to update favorites.");
+    }
+  };
+
+  const handleToggleFollow = async (shopId: string, isFollowing: boolean, e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!user) {
+      router.push("/auth?role=customer&tab=login");
+      return;
+    }
+    try {
+      if (isFollowing) {
+        await unfollowShop(shopId);
+        setFollowing(prev => {
+          const next = new Set(prev);
+          next.delete(shopId);
+          return next;
+        });
+      } else {
+        await followShop(shopId);
+        setFollowing(prev => {
+          const next = new Set(prev);
+          next.add(shopId);
+          return next;
+        });
+      }
+    } catch (err: any) {
+      alert(err.message || "Failed to update following.");
+    }
+  };
+
   const handleTogglePlay = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     setPlayingId((prev) => (prev === id ? null : id));
@@ -57,11 +141,36 @@ export default function CustomerDealsPage() {
     router.push("/");
   };
 
-  const filteredProducts = products.filter((p) => {
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
-    // Category filter is cosmetic for now (backend doesn't have categories)
-    return matchesSearch;
-  });
+  const handleReserve = async (productId: string) => {
+    if (!user) {
+      router.push("/auth?role=customer&tab=login");
+      return;
+    }
+    
+    try {
+      await createReservation(productId, 1); // defaulting to quantity 1 for simple 1-click reserve
+      alert("Item reserved successfully! View your reservations in your Profile.");
+      refetch(); // Refresh list to show updated quantities
+    } catch (err: any) {
+      alert(err.message || "Failed to reserve item.");
+    }
+  };
+
+  const handleUseLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setLat(pos.coords.latitude);
+          setLng(pos.coords.longitude);
+        },
+        (err) => alert("Could not get location. " + err.message)
+      );
+    } else {
+      alert("Geolocation is not supported by your browser.");
+    }
+  };
+
+  const filteredProducts = products; // Backend already handles search/category filters
 
   const showList = status === "success" && filteredProducts.length > 0;
   const showEmpty =
@@ -207,18 +316,25 @@ export default function CustomerDealsPage() {
       </header>
 
       {/* ── Map quick-access banner ─────────────────────────────────── */}
-      <div className="max-w-2xl mx-auto px-4 pt-4">
+      <div className="max-w-2xl mx-auto px-4 pt-4 flex gap-2">
         <Link
           href="/map"
-          className="flex items-center gap-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-3 rounded-2xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:scale-[1.01] transition-all"
+          className="flex-1 flex items-center gap-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-3 rounded-2xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:scale-[1.01] transition-all"
         >
           <MapPin size={20} className="flex-shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-bold leading-none">See deals on the map</p>
             <p className="text-xs opacity-80 mt-0.5">Find shops near you</p>
           </div>
-          <span className="text-xs font-bold bg-white/20 px-3 py-1 rounded-full">Open Map →</span>
+          <span className="text-xs font-bold bg-white/20 px-3 py-1 rounded-full hidden sm:block">Open Map →</span>
         </Link>
+        <button
+          onClick={handleUseLocation}
+          className="flex flex-col items-center justify-center bg-white dark:bg-gray-800 border border-emerald-500/30 px-3 py-3 rounded-2xl shadow-sm hover:bg-emerald-50 dark:hover:bg-gray-700 transition flex-shrink-0"
+        >
+          <MapPin size={18} className="text-emerald-500 mb-0.5" />
+          <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300">Nearby</span>
+        </button>
       </div>
 
       {/* ── Main content ────────────────────────────────────────────── */}
@@ -274,7 +390,11 @@ export default function CustomerDealsPage() {
             {filteredProducts.map((product, index) => (
               <DealProductCard
                 key={product.id}
-                {...buildDealProductCardProps(product, index, playingId, handleTogglePlay)}
+                {...buildDealProductCardProps(product, index, playingId, handleTogglePlay, handleReserve)}
+                isFavorite={favorites.has(product.id)}
+                isFollowing={following.has(product.shop_id)}
+                onToggleFavorite={handleToggleFavorite}
+                onToggleFollow={handleToggleFollow}
               />
             ))}
           </div>
