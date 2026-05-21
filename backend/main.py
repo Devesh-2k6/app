@@ -1,17 +1,75 @@
 """
-FreshSave API — in-memory storage (no database). Auth UI deferred.
+FreshSave API — SQLite database + JWT authentication.
 """
 
-from datetime import datetime, timedelta
-from typing import Optional
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime
+from typing import Annotated, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 import schemas
-from store import DEV_OWNER_UID, store
+from auth_service import (
+    create_access_token,
+    get_current_shop_owner,
+    get_current_user,
+    hash_password,
+    user_to_dict,
+    verify_password,
+)
+from db.models import Product, Shop, User
+from db.session import get_db, init_db
 
-app = FastAPI(title="FreshSave API")
+def _serialize_shop(shop: Shop) -> dict:
+    return {
+        "id": shop.id,
+        "name": shop.name,
+        "address": shop.address,
+        "latitude": shop.latitude,
+        "longitude": shop.longitude,
+        "description": shop.description,
+        "owner_uid": shop.owner_id,
+    }
+
+
+def _serialize_product(product: Product, shop: Optional[Shop] = None) -> dict:
+    out = {
+        "id": product.id,
+        "shop_id": product.shop_id,
+        "name": product.name,
+        "original_price": product.original_price,
+        "discount_price": product.discount_price,
+        "quantity": product.quantity,
+        "expiry_date": product.expiry_date,
+        "front_image_url": product.front_image_url,
+        "expiry_image_url": product.expiry_image_url,
+        "voice_note_url": product.voice_note_url,
+        "is_active": product.is_active,
+        "created_at": product.created_at,
+    }
+    if shop:
+        out["shop"] = {
+            "id": shop.id,
+            "name": shop.name,
+            "address": shop.address,
+            "latitude": shop.latitude,
+            "longitude": shop.longitude,
+        }
+    else:
+        out["shop"] = None
+    return out
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    init_db()
+    yield
+
+
+app = FastAPI(title="FreshSave API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,187 +80,243 @@ app.add_middleware(
 )
 
 
-def _serialize_shop(doc: dict) -> dict:
-    return {
-        "id": doc["id"],
-        "name": doc["name"],
-        "address": doc["address"],
-        "latitude": doc["latitude"],
-        "longitude": doc["longitude"],
-        "description": doc.get("description"),
-        "owner_uid": doc.get("owner_uid", DEV_OWNER_UID),
-    }
+# =========================
+# AUTH
+# =========================
 
 
-def _serialize_product(doc: dict, shop: Optional[dict] = None) -> dict:
-    out = {
-        "id": doc["id"],
-        "shop_id": doc.get("shop_id", ""),
-        "name": doc["name"],
-        "original_price": doc["original_price"],
-        "discount_price": doc["discount_price"],
-        "quantity": doc["quantity"],
-        "expiry_date": doc["expiry_date"],
-        "front_image_url": doc["front_image_url"],
-        "expiry_image_url": doc["expiry_image_url"],
-        "voice_note_url": doc.get("voice_note_url"),
-        "is_active": doc.get("is_active", True),
-        "created_at": doc.get("created_at", datetime.utcnow()),
-    }
-    if shop:
-        out["shop"] = {
-            "id": shop["id"],
-            "name": shop["name"],
-            "address": shop["address"],
-            "latitude": shop["latitude"],
-            "longitude": shop["longitude"],
-        }
-    else:
-        out["shop"] = None
-    return out
+@app.post("/auth/register", response_model=schemas.AuthResponse)
+def register(body: schemas.RegisterRequest, db: Annotated[Session, Depends(get_db)]):
+    email = body.email.strip().lower()
+    if db.query(User).filter(User.email == email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
 
-
-def _seed_demo_if_empty() -> None:
-    """So the customer /deals page has sample data on a fresh server."""
-    if store.shops:
-        return
-    shop = store.create_shop(
-        {
-            "name": "Green Valley Market",
-            "address": "123 Main Street",
-            "latitude": 12.9716,
-            "longitude": 77.5946,
-            "description": "Local grocery with daily discounts",
-        }
+    user = User(
+        email=email,
+        hashed_password=hash_password(body.password),
+        name=body.name.strip(),
+        is_shop_owner=body.is_shop_owner,
     )
-    expiry = datetime.utcnow() + timedelta(days=2)
-    for name, orig, disc in [
-        ("Organic Bananas", 89.0, 45.0),
-        ("Whole Milk 1L", 65.0, 40.0),
-    ]:
-        store.create_product(
-            {
-                "shop_id": shop["id"],
-                "name": name,
-                "original_price": orig,
-                "discount_price": disc,
-                "quantity": 10,
-                "expiry_date": expiry,
-                "front_image_url": "https://images.unsplash.com/photo-1571771894821-ce9b6c11fe08?w=400&q=80",
-                "expiry_image_url": "https://images.unsplash.com/photo-1571771894821-ce9b6c11fe08?w=400&q=80",
-                "voice_note_url": None,
-                "is_active": True,
-                "created_at": datetime.utcnow(),
-            }
-        )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    token = create_access_token(user.id)
+    return schemas.AuthResponse(access_token=token, user=user_to_dict(user))
 
 
-@app.on_event("startup")
-def on_startup():
-    _seed_demo_if_empty()
+@app.post("/auth/login", response_model=schemas.AuthResponse)
+def login(body: schemas.LoginRequest, db: Annotated[Session, Depends(get_db)]):
+    email = body.email.strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    if not user or not verify_password(body.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
 
-
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "ok",
-        "storage": "in-memory",
-        "shops": len(store.shops),
-        "products": len(store.products),
-    }
+    token = create_access_token(user.id)
+    return schemas.AuthResponse(access_token=token, user=user_to_dict(user))
 
 
 @app.get("/users/me")
-async def read_current_user():
+def read_current_user(user: Annotated[User, Depends(get_current_user)]):
+    return user_to_dict(user)
+
+
+@app.get("/health")
+def health_check(db: Annotated[Session, Depends(get_db)]):
+    shops = db.query(func.count(Shop.id)).scalar() or 0
+    products = db.query(func.count(Product.id)).scalar() or 0
     return {
-        "id": DEV_OWNER_UID,
-        "email": "dev@freshsave.local",
-        "name": "Dev User",
-        "is_shop_owner": True,
+        "status": "ok",
+        "storage": "sqlite",
+        "shops": shops,
+        "products": products,
     }
 
 
+# =========================
+# SHOPS
+# =========================
+
+
 @app.get("/shops/")
-async def list_shops():
+def list_shops(db: Annotated[Session, Depends(get_db)]):
+    now = datetime.now(UTC).replace(tzinfo=None)
     result: list[dict] = []
-    for shop in store.list_shops():
+    for shop in db.query(Shop).all():
         row = _serialize_shop(shop)
-        row["deal_count"] = store.count_active_deals(shop["id"])
+        deal_count = (
+            db.query(func.count(Product.id))
+            .filter(Product.shop_id == shop.id, Product.expiry_date > now)
+            .scalar()
+            or 0
+        )
+        row["deal_count"] = deal_count
         result.append(row)
     return result
 
 
 @app.post("/shops/")
-async def create_shop(shop: schemas.ShopBase):
-    created = store.create_shop(shop.model_dump())
-    return _serialize_shop(created)
+def create_shop(
+    shop_in: schemas.ShopBase,
+    user: Annotated[User, Depends(get_current_shop_owner)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    if db.query(Shop).filter(Shop.owner_id == user.id).first():
+        raise HTTPException(status_code=400, detail="You already have a shop. Edit it in settings.")
+
+    shop = Shop(
+        owner_id=user.id,
+        name=shop_in.name,
+        address=shop_in.address,
+        latitude=shop_in.latitude,
+        longitude=shop_in.longitude,
+        description=shop_in.description,
+    )
+    db.add(shop)
+    db.commit()
+    db.refresh(shop)
+    return _serialize_shop(shop)
 
 
 @app.get("/shops/me")
-async def read_my_shop():
-    shop = store.get_first_shop()
+def read_my_shop(
+    user: Annotated[User, Depends(get_current_shop_owner)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    shop = db.query(Shop).filter(Shop.owner_id == user.id).first()
     if not shop:
         raise HTTPException(status_code=404, detail="No shop found")
     return _serialize_shop(shop)
 
 
 @app.get("/shops/{shop_id}")
-async def read_shop(shop_id: str):
-    shop = store.get_shop(shop_id)
+def read_shop(shop_id: str, db: Annotated[Session, Depends(get_db)]):
+    shop = db.get(Shop, shop_id)
     if not shop:
         raise HTTPException(status_code=404, detail="Shop not found")
     return _serialize_shop(shop)
 
 
 @app.put("/shops/{shop_id}")
-async def update_shop(shop_id: str, shop: schemas.ShopBase):
-    updated = store.update_shop(shop_id, shop.model_dump())
-    if not updated:
+def update_shop(
+    shop_id: str,
+    shop_in: schemas.ShopBase,
+    user: Annotated[User, Depends(get_current_shop_owner)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    shop = db.get(Shop, shop_id)
+    if not shop or shop.owner_id != user.id:
         raise HTTPException(status_code=404, detail="Shop not found")
-    return _serialize_shop(updated)
+
+    shop.name = shop_in.name
+    shop.address = shop_in.address
+    shop.latitude = shop_in.latitude
+    shop.longitude = shop_in.longitude
+    shop.description = shop_in.description
+    db.commit()
+    db.refresh(shop)
+    return _serialize_shop(shop)
+
+
+# =========================
+# PRODUCTS
+# =========================
 
 
 @app.get("/products/")
-async def read_products(
+def read_products(
+    db: Annotated[Session, Depends(get_db)],
     shop_id: Optional[str] = None,
     hide_expired: bool = True,
 ):
-    products = store.list_products(shop_id=shop_id, hide_expired=hide_expired)
+    now = datetime.now(UTC).replace(tzinfo=None)
+    query = db.query(Product)
+    if shop_id:
+        query = query.filter(Product.shop_id == shop_id)
+    if hide_expired:
+        query = query.filter(Product.expiry_date > now)
+    products = query.order_by(Product.expiry_date.asc()).limit(100).all()
+
     out: list[dict] = []
     for p in products:
-        shop_doc = store.get_shop(p["shop_id"]) if p.get("shop_id") else None
-        out.append(_serialize_product(p, shop_doc))
+        shop = db.get(Shop, p.shop_id)
+        out.append(_serialize_product(p, shop))
     return out
 
 
-@app.post("/products/")
-async def create_product(product: schemas.ProductCreate):
-    shop = store.get_first_shop()
+def _get_owner_shop(user: User, db: Session) -> Shop:
+    shop = db.query(Shop).filter(Shop.owner_id == user.id).first()
     if not shop:
-        raise HTTPException(
-            status_code=400,
-            detail="No shop found. Create a shop first via POST /shops/",
-        )
+        raise HTTPException(status_code=400, detail="Create your shop before adding products.")
+    return shop
 
-    new_product = product.model_dump()
-    new_product["shop_id"] = shop["id"]
-    new_product["created_at"] = datetime.utcnow()
-    created = store.create_product(new_product)
-    return _serialize_product(created, shop)
+
+@app.post("/products/")
+def create_product(
+    product_in: schemas.ProductCreate,
+    user: Annotated[User, Depends(get_current_shop_owner)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    shop = _get_owner_shop(user, db)
+    product = Product(
+        shop_id=shop.id,
+        name=product_in.name,
+        original_price=product_in.original_price,
+        discount_price=product_in.discount_price,
+        quantity=product_in.quantity,
+        expiry_date=product_in.expiry_date,
+        front_image_url=product_in.front_image_url,
+        expiry_image_url=product_in.expiry_image_url,
+        voice_note_url=product_in.voice_note_url,
+        is_active=product_in.is_active,
+    )
+    db.add(product)
+    db.commit()
+    db.refresh(product)
+    return _serialize_product(product, shop)
 
 
 @app.put("/products/{product_id}")
-async def update_product(product_id: str, product: schemas.ProductCreate):
-    update = product.model_dump()
-    updated = store.update_product(product_id, update)
-    if not updated:
+def update_product(
+    product_id: str,
+    product_in: schemas.ProductCreate,
+    user: Annotated[User, Depends(get_current_shop_owner)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    product = db.get(Product, product_id)
+    if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    shop_doc = store.get_shop(updated["shop_id"]) if updated.get("shop_id") else None
-    return _serialize_product(updated, shop_doc)
+    shop = db.get(Shop, product.shop_id)
+    if not shop or shop.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    product.name = product_in.name
+    product.original_price = product_in.original_price
+    product.discount_price = product_in.discount_price
+    product.quantity = product_in.quantity
+    product.expiry_date = product_in.expiry_date
+    product.front_image_url = product_in.front_image_url
+    product.expiry_image_url = product_in.expiry_image_url
+    product.voice_note_url = product_in.voice_note_url
+    product.is_active = product_in.is_active
+    db.commit()
+    db.refresh(product)
+    return _serialize_product(product, shop)
 
 
 @app.delete("/products/{product_id}")
-async def delete_product(product_id: str):
-    if not store.delete_product(product_id):
+def delete_product(
+    product_id: str,
+    user: Annotated[User, Depends(get_current_shop_owner)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    product = db.get(Product, product_id)
+    if not product:
         raise HTTPException(status_code=404, detail="Product not found")
+    shop = db.get(Shop, product.shop_id)
+    if not shop or shop.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    db.delete(product)
+    db.commit()
     return {"message": "Product deleted"}

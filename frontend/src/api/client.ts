@@ -1,18 +1,17 @@
 import { getPublicApiBaseUrl } from "@/config/env";
+import { getAuthToken } from "@/lib/auth-storage";
 
 import { ApiError, parseApiErrorMessage } from "./errors";
 
 export type ApiRequestOptions = Omit<RequestInit, "body"> & {
-  /** JSON body; sets Content-Type and serializes automatically */
   json?: unknown;
   body?: BodyInit;
+  /** Skip Authorization header (login/register) */
+  skipAuth?: boolean;
 };
 
-/**
- * Typed fetch wrapper for the FastAPI backend.
- */
 export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
-  const { json: jsonBody, body: explicitBody, headers: initHeaders, ...rest } = options;
+  const { json: jsonBody, body: explicitBody, headers: initHeaders, skipAuth, ...rest } = options;
   const base = getPublicApiBaseUrl();
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const url = `${base}${normalizedPath}`;
@@ -20,6 +19,13 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   const headers = new Headers(initHeaders);
   if (!headers.has("Accept")) {
     headers.set("Accept", "application/json");
+  }
+
+  if (!skipAuth) {
+    const token = getAuthToken();
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
   }
 
   let body: BodyInit | undefined = explicitBody;

@@ -3,7 +3,7 @@
 import { DollarSign, Package, AlertTriangle, TrendingUp, Store, MapPin } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { useMemo, useState, useEffect } from "react";
-import { formatExpiryDisplay } from "@/lib/products/formatters";
+import { formatExpiryDisplay, isExpiringWithinHours } from "@/lib/products/formatters";
 import { getMyShop } from "@/services/shops";
 import type { ShopWithDescription } from "@/services/shops";
 import Link from "next/link";
@@ -24,6 +24,7 @@ export default function ShopDashboardOverview() {
       });
   }, []);
 
+  const [nowMs] = useState(() => Date.now());
   const { products } = useProducts({ shopId, limit: 100, hideExpired: true });
 
   const stats = useMemo(() => {
@@ -32,17 +33,16 @@ export default function ShopDashboardOverview() {
       (acc, p) => acc + (p.original_price - p.discount_price),
       0
     );
-    const expiringSoon = products.filter((p) => {
-      const t = new Date(p.expiry_date).getTime() - Date.now();
-      return t < 24 * 3600 * 1000 && t > 0;
-    }).length;
+    const expiringSoon = products.filter((p) =>
+      isExpiringWithinHours(p.expiry_date, 24, nowMs)
+    ).length;
 
     return [
       { name: "Active Deals", value: activeDeals.toString(), icon: Package, change: "+0", changeType: "positive" },
       { name: "Expiring Soon", value: expiringSoon.toString(), icon: AlertTriangle, change: "-0", changeType: "positive" },
       { name: "Total Savings", value: `₹${revenueSaved.toFixed(0)}`, icon: TrendingUp, change: "0%", changeType: "positive" },
     ];
-  }, [products]);
+  }, [products, nowMs]);
 
   if (!shop) {
     return (

@@ -1,8 +1,8 @@
-.env
-*.db
-pytest_freshsave.db
 __pycache__/
 *.py[cod]
-.pytest_cache/
+.env
 .venv/
 venv/
+.pytest_cache/
+data/freshsave.db
+data/store.json

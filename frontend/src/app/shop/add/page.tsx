@@ -5,6 +5,7 @@ import { Plus, Image as ImageIcon, Mic, Calendar, ArrowLeft, Loader2, StopCircle
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getErrorMessage } from "@/api/errors";
 import { createProduct } from "@/services/products";
 import { ApiProductCreate } from "@/types/product";
 
@@ -164,8 +165,8 @@ export default function AddProduct() {
       await createProduct(productData);
       
       router.push("/shop/products");
-    } catch (err: any) {
-      setError(err.message || "Failed to add product");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }

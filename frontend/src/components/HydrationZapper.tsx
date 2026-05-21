@@ -1,9 +1,8 @@
 "use client";
 
-// This runs immediately on the client before React hydrates.
 if (typeof window !== "undefined") {
   const originalError = console.error;
-  console.error = (...args: any[]) => {
+  console.error = (...args: unknown[]) => {
     if (typeof args[0] === "string") {
       const msg = args[0];
       if (
@@ -13,11 +12,10 @@ if (typeof window !== "undefined") {
         msg.includes("bis_skin_checked") ||
         msg.includes("fdprocessedid")
       ) {
-        // Silently ignore extension-injected hydration errors
         return;
       }
     }
-    originalError.call(console, ...args);
+    originalError.apply(console, args);
   };
 }
 

@@ -1,0 +1,46 @@
+import { apiRequest } from "@/api/client";
+
+export type AuthUser = {
+  id: string;
+  email: string;
+  name: string;
+  is_shop_owner: boolean;
+};
+
+export type AuthResponse = {
+  access_token: string;
+  token_type: string;
+  user: AuthUser;
+};
+
+export type RegisterInput = {
+  name: string;
+  email: string;
+  password: string;
+  is_shop_owner: boolean;
+};
+
+export type LoginInput = {
+  email: string;
+  password: string;
+};
+
+export async function register(data: RegisterInput): Promise<AuthResponse> {
+  return apiRequest<AuthResponse>("/auth/register", {
+    method: "POST",
+    json: data,
+    skipAuth: true,
+  });
+}
+
+export async function login(data: LoginInput): Promise<AuthResponse> {
+  return apiRequest<AuthResponse>("/auth/login", {
+    method: "POST",
+    json: data,
+    skipAuth: true,
+  });
+}
+
+export async function getMe(): Promise<AuthUser> {
+  return apiRequest<AuthUser>("/users/me");
+}

@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 
 import { HydrationZapper } from "@/components/HydrationZapper";
+import { AuthenticationProvider } from "@/contexts/AuthenticationContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,7 +21,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen bg-gray-50 dark:bg-gray-900`} suppressHydrationWarning>
         <HydrationZapper />
-        {children}
+        <AuthenticationProvider>{children}</AuthenticationProvider>
       </body>
     </html>
   );

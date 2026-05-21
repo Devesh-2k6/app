@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { getMyShop } from "@/services/shops";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Store, MapPin, CheckCircle2, Loader2, Navigation, Info, ShoppingBag } from "lucide-react";
@@ -10,7 +11,6 @@ import { createShop } from "@/services/shops";
 export default function ShopSetupPage() {
   const router = useRouter();
   
-  const [step, setStep] = useState(1);
   const [shopName, setShopName] = useState("");
   const [shopType, setShopType] = useState("grocery");
   const [address, setAddress] = useState("");
@@ -24,6 +24,12 @@ export default function ShopSetupPage() {
   const [isSuccess, setIsSuccess] = useState(false);
 
   // Shop type options
+  useEffect(() => {
+    getMyShop()
+      .then(() => router.replace("/shop"))
+      .catch(() => {});
+  }, [router]);
+
   const shopTypes = [
     { id: "grocery", label: "Grocery Store", icon: ShoppingBag },
     { id: "bakery", label: "Bakery", icon: Store },
@@ -106,7 +112,9 @@ export default function ShopSetupPage() {
             <CheckCircle2 size={80} className="text-emerald-500 mb-6" />
           </motion.div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Shop Created!</h2>
-          <p className="text-gray-500 dark:text-gray-400">Welcome to FreshSave, {shopName}. Let's start saving food.</p>
+          <p className="text-gray-500 dark:text-gray-400">
+            Welcome to FreshSave, {shopName}. Let&apos;s start saving food.
+          </p>
           <Loader2 size={24} className="animate-spin text-emerald-500 mt-8" />
         </motion.div>
       </div>
