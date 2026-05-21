@@ -1,237 +1,208 @@
 """
-FreshSave API — MongoDB + JWT auth (no Firebase).
+FreshSave API — in-memory storage (no database). Auth UI deferred.
 """
 
-from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
+from datetime import datetime, timedelta
 from typing import Optional
-from datetime import datetime
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 import schemas
-from database import get_db, client as db_client
-from auth import get_current_user_uid, get_password_hash, verify_password, create_access_token
-from bson import ObjectId
+from store import DEV_OWNER_UID, store
 
-app = FastAPI(title="FreshSave MongoDB API")
-
-# Setup CORS — allow all origins during development to avoid CORS issues
-ALLOWED_ORIGINS = ["*"]
+app = FastAPI(title="FreshSave API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# =========================
-# STARTUP & HEALTH
-# =========================
+
+def _serialize_shop(doc: dict) -> dict:
+    return {
+        "id": doc["id"],
+        "name": doc["name"],
+        "address": doc["address"],
+        "latitude": doc["latitude"],
+        "longitude": doc["longitude"],
+        "description": doc.get("description"),
+        "owner_uid": doc.get("owner_uid", DEV_OWNER_UID),
+    }
+
+
+def _serialize_product(doc: dict, shop: Optional[dict] = None) -> dict:
+    out = {
+        "id": doc["id"],
+        "shop_id": doc.get("shop_id", ""),
+        "name": doc["name"],
+        "original_price": doc["original_price"],
+        "discount_price": doc["discount_price"],
+        "quantity": doc["quantity"],
+        "expiry_date": doc["expiry_date"],
+        "front_image_url": doc["front_image_url"],
+        "expiry_image_url": doc["expiry_image_url"],
+        "voice_note_url": doc.get("voice_note_url"),
+        "is_active": doc.get("is_active", True),
+        "created_at": doc.get("created_at", datetime.utcnow()),
+    }
+    if shop:
+        out["shop"] = {
+            "id": shop["id"],
+            "name": shop["name"],
+            "address": shop["address"],
+            "latitude": shop["latitude"],
+            "longitude": shop["longitude"],
+        }
+    else:
+        out["shop"] = None
+    return out
+
+
+def _seed_demo_if_empty() -> None:
+    """So the customer /deals page has sample data on a fresh server."""
+    if store.shops:
+        return
+    shop = store.create_shop(
+        {
+            "name": "Green Valley Market",
+            "address": "123 Main Street",
+            "latitude": 12.9716,
+            "longitude": 77.5946,
+            "description": "Local grocery with daily discounts",
+        }
+    )
+    expiry = datetime.utcnow() + timedelta(days=2)
+    for name, orig, disc in [
+        ("Organic Bananas", 89.0, 45.0),
+        ("Whole Milk 1L", 65.0, 40.0),
+    ]:
+        store.create_product(
+            {
+                "shop_id": shop["id"],
+                "name": name,
+                "original_price": orig,
+                "discount_price": disc,
+                "quantity": 10,
+                "expiry_date": expiry,
+                "front_image_url": "https://images.unsplash.com/photo-1571771894821-ce9b6c11fe08?w=400&q=80",
+                "expiry_image_url": "https://images.unsplash.com/photo-1571771894821-ce9b6c11fe08?w=400&q=80",
+                "voice_note_url": None,
+                "is_active": True,
+                "created_at": datetime.utcnow(),
+            }
+        )
+
 
 @app.on_event("startup")
-async def startup_db_check():
-    """Verify MongoDB is reachable when the server starts."""
-    try:
-        info = await db_client.server_info()
-        print(f"[STARTUP] MongoDB connected OK - version {info.get('version', '?')}")
-    except Exception as e:
-        print(f"[STARTUP] WARNING: MongoDB not reachable: {e}")
-        print(f"[STARTUP] The server will start, but DB operations will fail until MongoDB is available.")
+def on_startup():
+    _seed_demo_if_empty()
+
 
 @app.get("/health")
 async def health_check():
-    """Quick health check endpoint."""
-    try:
-        db = await get_db()
-        await db.command("ping")
-        return {"status": "ok", "database": "connected"}
-    except Exception as e:
-        return {"status": "degraded", "database": str(e)}
-
-# =========================
-# AUTH: REGISTER & LOGIN
-# =========================
-
-@app.post("/auth/register", response_model=schemas.AuthResponse)
-async def register(req: schemas.RegisterRequest, db=Depends(get_db)):
-    """Register a new user with email + password. Returns JWT."""
-    # 1. Validation: Check if email already exists
-    existing = await db.users.find_one({"email": req.email})
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
-        
-    # 2. Hash Password
-    hashed_pwd = get_password_hash(req.password)
-    
-    # 3. Create user doc
-    user_doc = {
-        "email": req.email,
-        "name": req.name,
-        "hashed_password": hashed_pwd,
-        "is_shop_owner": req.is_shop_owner,
-        "created_at": datetime.utcnow(),
-    }
-    result = await db.users.insert_one(user_doc)
-    user_id = str(result.inserted_id)
-
-    # 4. Create JWT
-    token = create_access_token({"sub": user_id, "email": req.email})
-
     return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": {
-            "id": user_id,
-            "email": req.email,
-            "name": req.name,
-            "is_shop_owner": req.is_shop_owner,
-        },
-    }
-@app.post("/auth/login", response_model=schemas.AuthResponse)
-async def login(req: schemas.LoginRequest, db=Depends(get_db)):
-    """Login with email + password. Returns JWT."""
-    user = await db.users.find_one({"email": req.email})
-    if not user or not verify_password(req.password, user.get("hashed_password", "")):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    user_id = str(user["_id"])
-    token = create_access_token({"sub": user_id, "email": user["email"]})
-
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": {
-            "id": user_id,
-            "email": user["email"],
-            "name": user["name"],
-            "is_shop_owner": user.get("is_shop_owner", False),
-        },
+        "status": "ok",
+        "storage": "in-memory",
+        "shops": len(store.shops),
+        "products": len(store.products),
     }
 
-
-# =========================
-# USERS
-# =========================
 
 @app.get("/users/me")
-async def read_current_user(db=Depends(get_db), uid: str = Depends(get_current_user_uid)):
-    """Get the currently authenticated user's profile."""
-    user = await db.users.find_one({"_id": ObjectId(uid)})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
+async def read_current_user():
     return {
-        "id": str(user["_id"]),
-        "email": user["email"],
-        "name": user["name"],
-        "is_shop_owner": user.get("is_shop_owner", False),
+        "id": DEV_OWNER_UID,
+        "email": "dev@freshsave.local",
+        "name": "Dev User",
+        "is_shop_owner": True,
     }
 
 
-# =========================
-# SHOPS
-# =========================
+@app.get("/shops/")
+async def list_shops():
+    result: list[dict] = []
+    for shop in store.list_shops():
+        row = _serialize_shop(shop)
+        row["deal_count"] = store.count_active_deals(shop["id"])
+        result.append(row)
+    return result
+
 
 @app.post("/shops/")
-async def create_shop(shop: schemas.ShopBase, db=Depends(get_db), uid: str = Depends(get_current_user_uid)):
-    # Check if user is shop owner
-    user = await db.users.find_one({"_id": ObjectId(uid)})
-    if not user or not user.get("is_shop_owner"):
-        raise HTTPException(status_code=403, detail="Not authorized as shop owner")
-
-    existing_shop = await db.shops.find_one({"owner_uid": uid})
-    if existing_shop:
-        raise HTTPException(status_code=400, detail="User already has a shop")
-
-    new_shop = shop.model_dump()
-    new_shop["owner_uid"] = uid
-    result = await db.shops.insert_one(new_shop)
-    new_shop["id"] = str(result.inserted_id)
-    return new_shop
+async def create_shop(shop: schemas.ShopBase):
+    created = store.create_shop(shop.model_dump())
+    return _serialize_shop(created)
 
 
 @app.get("/shops/me")
-async def read_my_shop(db=Depends(get_db), uid: str = Depends(get_current_user_uid)):
-    """Get the shop owned by the currently authenticated user."""
-    shop = await db.shops.find_one({"owner_uid": uid})
+async def read_my_shop():
+    shop = store.get_first_shop()
     if not shop:
-        raise HTTPException(status_code=404, detail="No shop found for this user")
-    shop["id"] = str(shop["_id"])
-    return shop
+        raise HTTPException(status_code=404, detail="No shop found")
+    return _serialize_shop(shop)
 
 
 @app.get("/shops/{shop_id}")
-async def read_shop(shop_id: str, db=Depends(get_db)):
-    shop = await db.shops.find_one({"_id": ObjectId(shop_id)})
+async def read_shop(shop_id: str):
+    shop = store.get_shop(shop_id)
     if not shop:
         raise HTTPException(status_code=404, detail="Shop not found")
-    shop["id"] = str(shop["_id"])
-    return shop
+    return _serialize_shop(shop)
 
 
-# =========================
-# PRODUCTS
-# =========================
+@app.put("/shops/{shop_id}")
+async def update_shop(shop_id: str, shop: schemas.ShopBase):
+    updated = store.update_shop(shop_id, shop.model_dump())
+    if not updated:
+        raise HTTPException(status_code=404, detail="Shop not found")
+    return _serialize_shop(updated)
+
 
 @app.get("/products/")
 async def read_products(
     shop_id: Optional[str] = None,
     hide_expired: bool = True,
-    db=Depends(get_db),
 ):
-    query = {}
-    if shop_id:
-        query["shop_id"] = shop_id
-    if hide_expired:
-        query["expiry_date"] = {"$gt": datetime.utcnow()}
-
-    cursor = db.products.find(query).sort("expiry_date", 1)
-    products = await cursor.to_list(length=100)
-
+    products = store.list_products(shop_id=shop_id, hide_expired=hide_expired)
+    out: list[dict] = []
     for p in products:
-        p["id"] = str(p["_id"])
-        # Fetch shop details for each product (simple join)
-        try:
-            shop = await db.shops.find_one({"_id": ObjectId(p["shop_id"])})
-            if shop:
-                p["shop"] = {
-                    "id": str(shop["_id"]),
-                    "name": shop["name"],
-                    "address": shop["address"],
-                }
-        except Exception:
-            pass
-
-    return products
+        shop_doc = store.get_shop(p["shop_id"]) if p.get("shop_id") else None
+        out.append(_serialize_product(p, shop_doc))
+    return out
 
 
 @app.post("/products/")
-async def create_product(product: schemas.ProductCreate, db=Depends(get_db), uid: str = Depends(get_current_user_uid)):
-    shop = await db.shops.find_one({"owner_uid": uid})
+async def create_product(product: schemas.ProductCreate):
+    shop = store.get_first_shop()
     if not shop:
-        raise HTTPException(status_code=400, detail="No shop found for this owner")
+        raise HTTPException(
+            status_code=400,
+            detail="No shop found. Create a shop first via POST /shops/",
+        )
 
     new_product = product.model_dump()
-    new_product["shop_id"] = str(shop["_id"])
+    new_product["shop_id"] = shop["id"]
     new_product["created_at"] = datetime.utcnow()
+    created = store.create_product(new_product)
+    return _serialize_product(created, shop)
 
-    result = await db.products.insert_one(new_product)
-    new_product["id"] = str(result.inserted_id)
-    return new_product
+
+@app.put("/products/{product_id}")
+async def update_product(product_id: str, product: schemas.ProductCreate):
+    update = product.model_dump()
+    updated = store.update_product(product_id, update)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Product not found")
+    shop_doc = store.get_shop(updated["shop_id"]) if updated.get("shop_id") else None
+    return _serialize_product(updated, shop_doc)
 
 
 @app.delete("/products/{product_id}")
-async def delete_product(product_id: str, db=Depends(get_db), uid: str = Depends(get_current_user_uid)):
-    shop = await db.shops.find_one({"owner_uid": uid})
-    if not shop:
-        raise HTTPException(status_code=400, detail="Not a shop owner")
-
-    result = await db.products.delete_one({
-        "_id": ObjectId(product_id),
-        "shop_id": str(shop["_id"]),
-    })
-
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Product not found or not owned by you")
+async def delete_product(product_id: str):
+    if not store.delete_product(product_id):
+        raise HTTPException(status_code=404, detail="Product not found")
     return {"message": "Product deleted"}
