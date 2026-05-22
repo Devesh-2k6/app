@@ -9,10 +9,10 @@ function stripTrailingSlash(url: string): string {
 
 /**
  * Base URL for the FastAPI backend (e.g. https://api.example.com).
- * Falls back to local dev when unset so `next dev` works out of the box.
+ * Uses NEXT_PUBLIC_API_URL environment variable.
  */
 export function getPublicApiBaseUrl(): string {
   const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (raw) return stripTrailingSlash(raw);
-  return "http://127.0.0.1:8000";
+  return process.env.NEXT_PUBLIC_API_URL || "";
 }
