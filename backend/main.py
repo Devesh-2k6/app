@@ -5,14 +5,16 @@ FreshSave API — Supabase PostgreSQL + JWT authentication + Mega-Features.
 from dotenv import load_dotenv
 load_dotenv()
 
+import time
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 import schemas
 from auth_service import (
@@ -92,11 +94,15 @@ def _serialize_product(product: Product, shop: Optional[Shop] = None) -> dict:
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    start = time.perf_counter()
     init_db()
+    elapsed = time.perf_counter() - start
+    print(f"Backend initialized in {elapsed:.3f} seconds.")
     yield
 
 app = FastAPI(title="FreshSave API", lifespan=lifespan)
 
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -144,7 +150,11 @@ def read_current_user(user: Annotated[User, Depends(get_current_user)]):
     return user
 
 @app.get("/health")
-def health_check(db: Annotated[Session, Depends(get_db)]):
+def health_check():
+    return {"status": "ok", "message": "Service is running"}
+
+@app.get("/health/db")
+def db_health_check(db: Annotated[Session, Depends(get_db)]):
     shops = db.query(func.count(Shop.id)).scalar() or 0
     products = db.query(func.count(Product.id)).scalar() or 0
     return {
@@ -162,15 +172,23 @@ def health_check(db: Annotated[Session, Depends(get_db)]):
 @app.get("/shops/")
 def list_shops(db: Annotated[Session, Depends(get_db)]):
     now = datetime.now(UTC).replace(tzinfo=None)
+    
+    deal_count_subq = (
+        db.query(Product.shop_id, func.count(Product.id).label("count"))
+        .filter(Product.expiry_date > now, Product.quantity > 0)
+        .group_by(Product.shop_id)
+        .subquery()
+    )
+
+    shops_with_counts = (
+        db.query(Shop, func.coalesce(deal_count_subq.c.count, 0))
+        .outerjoin(deal_count_subq, Shop.id == deal_count_subq.c.shop_id)
+        .all()
+    )
+
     result: list[dict] = []
-    for shop in db.query(Shop).all():
+    for shop, deal_count in shops_with_counts:
         row = _serialize_shop(shop)
-        deal_count = (
-            db.query(func.count(Product.id))
-            .filter(Product.shop_id == shop.id, Product.expiry_date > now, Product.quantity > 0)
-            .scalar()
-            or 0
-        )
         row["deal_count"] = deal_count
         result.append(row)
     return result
@@ -241,24 +259,22 @@ def read_products(
         return R * c
 
     now = datetime.now(UTC).replace(tzinfo=None)
-    query = db.query(Product).filter(Product.quantity > 0)
+    query = db.query(Product).options(joinedload(Product.shop)).filter(Product.quantity > 0)
+    
     if shop_id:
         query = query.filter(Product.shop_id == shop_id)
     if hide_expired:
         query = query.filter(Product.expiry_date > now)
     if category:
         query = query.filter(Product.category == category)
+    if q:
+        query = query.filter(Product.name.ilike(f"%{q}%"))
 
     products = query.order_by(Product.expiry_date.asc()).all()
 
     out: list[dict] = []
     for p in products:
-        # text filter
-        if q and q.lower() not in p.name.lower():
-            continue
-        
-        shop = db.get(Shop, p.shop_id)
-        
+        shop = p.shop
         # geo filter
         if lat is not None and lng is not None and shop:
             dist = haversine_distance(lat, lng, shop.latitude, shop.longitude)
@@ -642,14 +658,17 @@ def get_shop_analytics(
 ):
     shop = _get_owner_shop(user, db)
     
-    # Total Revenue (Only completed reservations)
-    completed_res = db.query(Reservation).filter(
+    # Total Revenue & Items (Only completed reservations)
+    stats = db.query(
+        func.sum(Reservation.total_price).label("total_revenue"),
+        func.sum(Reservation.quantity).label("total_items")
+    ).filter(
         Reservation.shop_id == shop.id, 
         Reservation.status == ReservationStatus.COMPLETED
-    ).all()
+    ).first()
     
-    total_revenue = sum(r.total_price for r in completed_res)
-    total_items_saved = sum(r.quantity for r in completed_res)
+    total_revenue = stats.total_revenue or 0.0 if stats else 0.0
+    total_items_saved = stats.total_items or 0 if stats else 0
     
     # Active pending reservations
     active_res = db.query(Reservation).filter(

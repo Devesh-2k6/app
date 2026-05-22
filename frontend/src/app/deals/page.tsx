@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthenticationContext";
 import { DealProductCard } from "@/components/products/DealProductCard";
+import { DealProductSkeleton } from "@/components/products/DealProductSkeleton";
 import { getErrorMessage } from "@/api/errors";
 import { useProducts } from "@/hooks/useProducts";
 import { buildDealProductCardProps } from "@/lib/products/map-deal-product";
@@ -340,9 +341,10 @@ export default function CustomerDealsPage() {
       {/* ── Main content ────────────────────────────────────────────── */}
       <main className="p-4 max-w-2xl mx-auto">
         {status === "loading" && (
-          <div className="py-20 flex flex-col items-center gap-3">
-            <Loader2 className="animate-spin text-emerald-500" size={32} />
-            <p className="text-sm text-gray-500">Loading deals…</p>
+          <div className="space-y-4 mt-4">
+            {[1, 2, 3, 4].map((i) => (
+              <DealProductSkeleton key={i} />
+            ))}
           </div>
         )}
 

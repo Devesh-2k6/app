@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-
+import useSWR from "swr";
 import { getErrorMessage } from "@/api/errors";
 import { getProducts } from "@/services/products";
 import type { ApiProduct, ProductCategory } from "@/types/product";
@@ -25,41 +24,23 @@ export function useProducts(options?: {
   lng?: number;
   radius_km?: number;
 }): UseProductsResult {
-  const limit = options?.limit ?? 100;
-  const shopId = options?.shopId;
-  const hideExpired = options?.hideExpired;
-  const q = options?.q;
-  const category = options?.category;
-  const lat = options?.lat;
-  const lng = options?.lng;
-  const radius_km = options?.radius_km;
+  // SWR automatically serializes objects into keys and passes them to the fetcher
+  const key = options ? { ...options, _key: "products" } : { _key: "products" };
+  const fetcher = (params: any) => getProducts(params);
 
-  const [products, setProducts] = useState<ApiProduct[]>([]);
-  const [status, setStatus] = useState<ProductsLoadStatus>("loading");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { data, error, isLoading, mutate } = useSWR(key, fetcher);
 
-  const load = useCallback(async () => {
-    setStatus("loading");
-    setErrorMessage(null);
-    try {
-      const data = await getProducts({ limit, shopId, hideExpired, q, category, lat, lng, radius_km });
-      if (data.length === 0) {
-        setProducts([]);
-        setStatus("empty");
-      } else {
-        setProducts(data);
-        setStatus("success");
-      }
-    } catch (e) {
-      setProducts([]);
-      setErrorMessage(getErrorMessage(e));
-      setStatus("error");
-    }
-  }, [limit, shopId, hideExpired, q, category, lat, lng, radius_km]);
+  let status: ProductsLoadStatus = "success";
+  if (isLoading && !data) status = "loading";
+  else if (error) status = "error";
+  else if (data && data.length === 0) status = "empty";
 
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  return { products, status, errorMessage, refetch: load };
+  return {
+    products: data || [],
+    status,
+    errorMessage: error ? getErrorMessage(error) : null,
+    refetch: async () => {
+      await mutate();
+    },
+  };
 }

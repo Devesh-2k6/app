@@ -2,6 +2,8 @@
 
 import { MapPin, Pause, Play, Package, Clock, ArrowDownRight, Tag, Heart } from "lucide-react";
 import { motion } from "framer-motion";
+import Image from "next/image";
+import React from "react";
 
 export type DealProductCardProps = {
   index: number;
@@ -29,7 +31,7 @@ export type DealProductCardProps = {
   onToggleFollow?: (shopId: string, isFollowing: boolean, e: React.MouseEvent) => void;
 };
 
-export function DealProductCard({
+export const DealProductCard = React.memo(function DealProductCardBase({
   index,
   id,
   name,
@@ -69,7 +71,7 @@ export function DealProductCard({
     >
       <div className="flex gap-4 flex-1">
         <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 border border-gray-100 dark:border-gray-700 relative">
-          <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
+          <Image src={imageUrl} alt={name} fill sizes="96px" className="object-cover" />
           {isSurpriseBag && (
             <div className="absolute inset-0 bg-gradient-to-t from-purple-900/80 to-transparent flex items-end justify-center pb-1">
               <span className="text-[10px] font-bold text-white flex items-center gap-1">
@@ -181,6 +183,15 @@ export function DealProductCard({
           </button>
         </div>
       )}
-    </motion.article>
+}, (prev, next) => {
+  return (
+    prev.id === next.id &&
+    prev.currentPrice === next.currentPrice &&
+    prev.quantity === next.quantity &&
+    prev.isFavorite === next.isFavorite &&
+    prev.isFollowing === next.isFollowing &&
+    (prev.playingId === prev.id) === (next.playingId === next.id)
   );
-}
+});
+
+DealProductCard.displayName = "DealProductCard";

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getMyReservations } from "@/services/reservations";
 import type { ApiReservation } from "@/types/product";
 import { Loader2, Package, MapPin, CheckCircle, Clock, ArrowLeft, CreditCard, Star } from "lucide-react";
@@ -68,9 +69,11 @@ export default function MyReservations() {
         ) : (
           reservations.map(res => (
             <div key={res.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
-              <div className="flex gap-4">
-                <img src={res.product.front_image_url} alt={res.product.name} className="w-20 h-20 rounded-xl object-cover" />
-                <div className="flex-1">
+              <div className="flex gap-4 p-4">
+                <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 relative">
+                  <Image src={res.product.front_image_url} alt={res.product.name} fill sizes="80px" className="object-cover" />
+                </div>
+                <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-gray-900 dark:text-white">{res.product.name}</h3>
                   <p className="text-xs text-gray-500 flex items-center gap-1 mt-1"><MapPin size={12}/> {res.product.shop?.name}</p>
                   

@@ -30,6 +30,10 @@ def _create_engine():
     kwargs = {}
     if url.startswith("sqlite"):
         kwargs["connect_args"] = {"check_same_thread": False}
+    elif url.startswith("postgresql"):
+        kwargs["pool_size"] = 10
+        kwargs["max_overflow"] = 20
+        kwargs["pool_pre_ping"] = True
     return create_engine(url, **kwargs)
 
 
@@ -42,7 +46,9 @@ def init_db() -> None:
     if url.startswith("sqlite:///"):
         db_path = Path(url.removeprefix("sqlite:///"))
         db_path.parent.mkdir(parents=True, exist_ok=True)
-    Base.metadata.create_all(bind=engine)
+        
+    if os.getenv("SKIP_DB_INIT", "false").lower() != "true":
+        Base.metadata.create_all(bind=engine)
 
 
 def get_db() -> Generator[Session, None, None]:

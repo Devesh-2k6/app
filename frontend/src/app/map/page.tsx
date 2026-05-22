@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Search, Filter, MapPin, Loader2 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 
@@ -181,11 +182,13 @@ export default function MapDiscovery() {
                     key={p.id}
                     className="min-w-[140px] bg-gray-50 dark:bg-gray-800 rounded-2xl p-3 border border-gray-100 dark:border-gray-700 flex-shrink-0"
                   >
-                    <div className="h-20 w-full bg-gray-200 rounded-xl mb-3 overflow-hidden">
-                      <img
+                    <div className="h-20 w-full bg-gray-200 rounded-xl mb-3 overflow-hidden relative">
+                      <Image
                         src={p.front_image_url}
                         alt={p.name}
-                        className="w-full h-full object-cover"
+                        fill
+                        sizes="140px"
+                        className="object-cover"
                       />
                     </div>
                     <h4 className="text-xs font-bold text-gray-900 dark:text-white mb-1 line-clamp-1">

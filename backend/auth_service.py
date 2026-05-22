@@ -55,7 +55,7 @@ def get_user_from_token(db: Session, token: str) -> Optional[User]:
         return None
 
 
-async def get_current_user(
+def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
     db: Annotated[Session, Depends(get_db)],
 ) -> User:
@@ -75,7 +75,7 @@ async def get_current_user(
     return user
 
 
-async def get_current_shop_owner(
+def get_current_shop_owner(
     user: Annotated[User, Depends(get_current_user)],
 ) -> User:
     if not user.is_shop_owner:
