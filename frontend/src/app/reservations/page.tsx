@@ -13,10 +13,6 @@ export default function MyReservations() {
   const [reservations, setReservations] = useState<ApiReservation[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadReservations();
-  }, []);
-
   const loadReservations = async () => {
     try {
       const data = await getMyReservations();
@@ -27,6 +23,10 @@ export default function MyReservations() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadReservations();
+  }, []);
 
   const handleReview = async (shopId: string) => {
     const ratingStr = window.prompt("Rate the shop from 1 to 5 stars:");

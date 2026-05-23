@@ -13,10 +13,6 @@ export default function ShopReservations() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadReservations();
-  }, []);
-
   const loadReservations = async () => {
     try {
       const data = await getShopReservations();
@@ -27,6 +23,10 @@ export default function ShopReservations() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadReservations();
+  }, []);
 
   const handleVerify = async (resId: string) => {
     setError(null);
@@ -41,8 +41,9 @@ export default function ShopReservations() {
       setSuccess("Reservation successfully verified! Food handed over.");
       setPickupCode("");
       await loadReservations();
-    } catch (err: any) {
-      setError(err.message || "Failed to verify. Invalid code?");
+    } catch (err) {
+      const error = err as Error;
+      setError(error.message || "Failed to verify. Invalid code?");
     } finally {
       setVerifyingId(null);
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import { 
   MapPin, 
@@ -14,7 +15,21 @@ import {
   Sparkles
 } from "lucide-react";
 
+import { useConfetti } from "@/hooks/useConfetti";
+import { useSound } from "@/hooks/useSound";
+
+// Dynamically import the HeroMap with ssr disabled to prevent leaflet window errors
+const HeroMap = dynamic(() => import('@/components/map/HeroMap'), { ssr: false });
+
 export default function Home() {
+  const { triggerConfetti } = useConfetti();
+  const { playPopSound } = useSound();
+
+  const handleReserve = (e: React.MouseEvent) => {
+    playPopSound();
+    triggerConfetti(e);
+  };
+
   const fadeInUp = {
     initial: { opacity: 0, y: 30 },
     whileInView: { opacity: 1, y: 0 },
@@ -58,7 +73,7 @@ export default function Home() {
       <div className="pt-6 px-4 max-w-7xl mx-auto sticky top-0 z-50">
         <nav className="bg-[#242424]/70 backdrop-blur-2xl border border-white/10 rounded-2xl px-4 md:px-6 py-3 md:py-4 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300">
           <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2 group">
+            <Link href="/" onClick={playPopSound} className="flex items-center gap-2 group">
               <div className="bg-emerald-500 p-1.5 rounded-lg group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(16,185,129,0.5)]">
                 <MapPin size={20} className="text-white fill-white" />
               </div>
@@ -66,21 +81,21 @@ export default function Home() {
             </Link>
             
             <div className="hidden lg:flex items-center gap-6 text-sm font-medium text-gray-300">
-              <Link href="#" className="hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">For shoppers</Link>
-              <Link href="#" className="hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">For shops</Link>
-              <Link href="#" className="hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">How it works</Link>
-              <Link href="#" className="hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Impact</Link>
+              <Link href="#" onClick={playPopSound} className="hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">For shoppers</Link>
+              <Link href="#" onClick={playPopSound} className="hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">For shops</Link>
+              <Link href="#" onClick={playPopSound} className="hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">How it works</Link>
+              <Link href="#" onClick={playPopSound} className="hover:text-white hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-all">Impact</Link>
             </div>
           </div>
 
           <div className="flex items-center gap-2 md:gap-4">
-            <Link href="/auth?tab=login" className="hidden md:block text-sm font-semibold text-white px-4 py-2 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+            <Link href="/auth?tab=login" onClick={playPopSound} className="hidden md:block text-sm font-semibold text-white px-4 py-2 border border-white/10 rounded-xl hover:bg-white/10 hover:border-white/30 transition-all duration-300">
               Sign in
             </Link>
-            <Link href="/auth?tab=register" className="text-sm font-bold text-[#141414] bg-white px-4 py-2 rounded-xl hover:bg-gray-200 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all duration-300 transform hover:-translate-y-0.5">
+            <Link href="/auth?tab=register" onClick={playPopSound} className="text-sm font-bold text-[#141414] bg-white px-4 py-2 rounded-xl hover:bg-gray-200 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all duration-300 transform hover:-translate-y-0.5">
               Get started
             </Link>
-            <button className="p-2 text-gray-400 hover:text-white bg-white/5 rounded-lg ml-1 hover:bg-white/10 transition-colors">
+            <button onClick={playPopSound} className="p-2 text-gray-400 hover:text-white bg-white/5 rounded-lg ml-1 hover:bg-white/10 transition-colors">
               <MoreHorizontal size={20} />
             </button>
           </div>
@@ -124,39 +139,23 @@ export default function Home() {
           transition={{ delay: 0.5, duration: 0.6 }}
           className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto mb-20"
         >
-          <Link href="/deals" className="w-full sm:w-auto flex justify-center items-center gap-2 px-8 py-4 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-400 hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300 transform hover:-translate-y-1">
+          <Link href="/deals" onClick={playPopSound} className="w-full sm:w-auto flex justify-center items-center gap-2 px-8 py-4 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-400 hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300 transform hover:-translate-y-1">
             <MapPin size={20} />
             Browse deals near me
           </Link>
-          <Link href="/shop/setup" className="w-full sm:w-auto flex justify-center items-center gap-2 px-8 py-4 bg-white/5 border border-white/10 rounded-xl font-bold hover:bg-white/10 hover:border-white/30 transition-all duration-300">
+          <Link href="/shop/setup" onClick={playPopSound} className="w-full sm:w-auto flex justify-center items-center gap-2 px-8 py-4 bg-white/5 border border-white/10 rounded-xl font-bold hover:bg-white/10 hover:border-white/30 transition-all duration-300">
             List your shop <ArrowRight size={20} />
           </Link>
         </motion.div>
 
+        {/* Interactive Map Replaces Static Stats */}
         <motion.div 
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.8, ease: "easeOut" }}
-          className="w-full max-w-4xl bg-gradient-to-b from-[#262626] to-[#1A1A1A] border border-[#3A3A3A] rounded-3xl grid grid-cols-2 md:grid-cols-4 overflow-hidden shadow-2xl relative"
+          className="w-full max-w-4xl h-[400px] md:h-[450px] relative rounded-3xl overflow-hidden shadow-2xl"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
-          
-          <div className="p-6 md:p-8 border-b md:border-b-0 md:border-r border-[#3A3A3A] flex flex-col items-center justify-center group">
-            <div className="text-3xl md:text-4xl font-black text-emerald-400 mb-1 group-hover:scale-110 transition-transform duration-300">₹2.4L</div>
-            <div className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider">saved this week</div>
-          </div>
-          <div className="p-6 md:p-8 border-b md:border-b-0 md:border-r border-[#3A3A3A] flex flex-col items-center justify-center group">
-            <div className="text-3xl md:text-4xl font-black text-emerald-400 mb-1 group-hover:scale-110 transition-transform duration-300">1,840</div>
-            <div className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider">products rescued</div>
-          </div>
-          <div className="p-6 md:p-8 border-r border-[#3A3A3A] flex flex-col items-center justify-center group">
-            <div className="text-3xl md:text-4xl font-black text-emerald-400 mb-1 group-hover:scale-110 transition-transform duration-300">92%</div>
-            <div className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider">customer rating</div>
-          </div>
-          <div className="p-6 md:p-8 flex flex-col items-center justify-center group">
-            <div className="text-3xl md:text-4xl font-black text-emerald-400 mb-1 group-hover:scale-110 transition-transform duration-300">0.8km</div>
-            <div className="text-xs md:text-sm text-gray-400 font-bold uppercase tracking-wider">avg. deal distance</div>
-          </div>
+          <HeroMap />
         </motion.div>
       </main>
 
@@ -174,11 +173,11 @@ export default function Home() {
         </motion.div>
 
         <motion.div {...fadeInUp} className="flex flex-wrap gap-3 mb-10 overflow-x-auto pb-2 scrollbar-hide">
-          <button className="px-6 py-2.5 rounded-xl bg-white text-[#141414] font-bold shadow-[0_0_15px_rgba(255,255,255,0.2)]">All</button>
-          <button className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 font-semibold hover:bg-white/10 hover:border-white/30 transition-all whitespace-nowrap">Bakery</button>
-          <button className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 font-semibold hover:bg-white/10 hover:border-white/30 transition-all whitespace-nowrap">Dairy</button>
-          <button className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 font-semibold hover:bg-white/10 hover:border-white/30 transition-all whitespace-nowrap">Snacks</button>
-          <button className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 font-semibold hover:bg-white/10 hover:border-white/30 transition-all whitespace-nowrap">Produce</button>
+          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-white text-[#141414] font-bold shadow-[0_0_15px_rgba(255,255,255,0.2)]">All</button>
+          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 font-semibold hover:bg-white/10 hover:border-white/30 transition-all whitespace-nowrap">Bakery</button>
+          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 font-semibold hover:bg-white/10 hover:border-white/30 transition-all whitespace-nowrap">Dairy</button>
+          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 font-semibold hover:bg-white/10 hover:border-white/30 transition-all whitespace-nowrap">Snacks</button>
+          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 font-semibold hover:bg-white/10 hover:border-white/30 transition-all whitespace-nowrap">Produce</button>
         </motion.div>
 
         <motion.div 
@@ -219,7 +218,7 @@ export default function Home() {
                 <div className="flex items-center text-sm font-bold text-gray-300">
                   <MapPin size={16} className="mr-1.5 text-emerald-500" /> 0.4 km
                 </div>
-                <button className="bg-white/5 border border-white/10 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white text-gray-200 font-bold px-5 py-2 rounded-xl text-sm transition-all duration-300">
+                <button onClick={handleReserve} className="bg-white/5 border border-white/10 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white text-gray-200 font-bold px-5 py-2 rounded-xl text-sm transition-all duration-300">
                   Reserve
                 </button>
               </div>
@@ -255,7 +254,7 @@ export default function Home() {
                 <div className="flex items-center text-sm font-bold text-gray-300">
                   <MapPin size={16} className="mr-1.5 text-emerald-500" /> 1.2 km
                 </div>
-                <button className="bg-white/5 border border-white/10 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white text-gray-200 font-bold px-5 py-2 rounded-xl text-sm transition-all duration-300">
+                <button onClick={handleReserve} className="bg-white/5 border border-white/10 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white text-gray-200 font-bold px-5 py-2 rounded-xl text-sm transition-all duration-300">
                   Reserve
                 </button>
               </div>
@@ -291,7 +290,7 @@ export default function Home() {
                 <div className="flex items-center text-sm font-bold text-gray-300">
                   <MapPin size={16} className="mr-1.5 text-emerald-500" /> 2.1 km
                 </div>
-                <button className="bg-white/5 border border-white/10 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white text-gray-200 font-bold px-5 py-2 rounded-xl text-sm transition-all duration-300">
+                <button onClick={handleReserve} className="bg-white/5 border border-white/10 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white text-gray-200 font-bold px-5 py-2 rounded-xl text-sm transition-all duration-300">
                   Reserve
                 </button>
               </div>

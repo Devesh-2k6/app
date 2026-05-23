@@ -5,16 +5,24 @@ FreshSave API — Supabase PostgreSQL + JWT authentication + Mega-Features.
 from dotenv import load_dotenv
 load_dotenv()
 
+import os
+import math
+import logging
 import time
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Optional
 
+from redis import asyncio as aioredis
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+from fastapi_cache.decorator import cache
+
 from fastapi import Depends, FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, contains_eager
 
 import schemas
 from auth_service import (
@@ -92,12 +100,26 @@ def _serialize_product(product: Product, shop: Optional[Shop] = None) -> dict:
     return out
 
 
+# Setup logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     start = time.perf_counter()
     init_db()
     elapsed = time.perf_counter() - start
-    print(f"Backend initialized in {elapsed:.3f} seconds.")
+    logger.info(f"Backend database initialized in {elapsed:.3f} seconds.")
+    
+    # Initialize Redis Cache
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+    try:
+        redis = aioredis.from_url(redis_url, encoding="utf8", decode_responses=True)
+        FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+        logger.info("Redis cache initialized.")
+    except Exception as e:
+        logger.warning(f"Failed to initialize Redis cache: {e}")
+        
     yield
 
 app = FastAPI(title="FreshSave API", lifespan=lifespan)
@@ -170,6 +192,7 @@ def db_health_check(db: Annotated[Session, Depends(get_db)]):
 # =========================
 
 @app.get("/shops/")
+@cache(expire=60)
 def list_shops(db: Annotated[Session, Depends(get_db)]):
     now = datetime.now(UTC).replace(tzinfo=None)
     
@@ -238,6 +261,7 @@ def read_shop(shop_id: str, db: Annotated[Session, Depends(get_db)]):
 # =========================
 
 @app.get("/products/")
+@cache(expire=60)
 def read_products(
     db: Annotated[Session, Depends(get_db)],
     shop_id: Optional[str] = None,
@@ -259,7 +283,7 @@ def read_products(
         return R * c
 
     now = datetime.now(UTC).replace(tzinfo=None)
-    query = db.query(Product).options(joinedload(Product.shop)).filter(Product.quantity > 0)
+    query = db.query(Product).join(Product.shop).options(contains_eager(Product.shop)).filter(Product.quantity > 0)
     
     if shop_id:
         query = query.filter(Product.shop_id == shop_id)
@@ -269,6 +293,14 @@ def read_products(
         query = query.filter(Product.category == category)
     if q:
         query = query.filter(Product.name.ilike(f"%{q}%"))
+        
+    if lat is not None and lng is not None:
+        lat_delta = radius_km / 111.0
+        lng_delta = radius_km / (111.0 * math.cos(math.radians(lat)))
+        query = query.filter(
+            Shop.latitude.between(lat - lat_delta, lat + lat_delta),
+            Shop.longitude.between(lng - lng_delta, lng + lng_delta)
+        )
 
     products = query.order_by(Product.expiry_date.asc()).all()
 

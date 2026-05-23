@@ -63,11 +63,12 @@ export const DealProductCard = React.memo(function DealProductCardBase({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className={`bg-white dark:bg-gray-800 rounded-2xl border ${
+      whileHover={{ y: -4 }}
+      className={`glass-card rounded-3xl ${
         isSurpriseBag
-          ? "border-purple-200 dark:border-purple-900/50 shadow-purple-500/10"
-          : "border-gray-100 dark:border-gray-700"
-      } shadow-sm overflow-hidden flex flex-col sm:flex-row gap-4 p-4`}
+          ? "border-purple-200 dark:border-purple-900/50 shadow-purple-500/20"
+          : "border-gray-100 dark:border-gray-700/50"
+      } overflow-hidden flex flex-col sm:flex-row gap-4 p-4 ${isDynamicPricing ? "pulse-glow" : ""}`}
     >
       <div className="flex gap-4 flex-1">
         <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 border border-gray-100 dark:border-gray-700 relative">
@@ -183,6 +184,8 @@ export const DealProductCard = React.memo(function DealProductCardBase({
           </button>
         </div>
       )}
+    </motion.article>
+  );
 }, (prev, next) => {
   return (
     prev.id === next.id &&
