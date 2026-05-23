@@ -8,8 +8,14 @@ import { AuthenticationProvider } from "@/contexts/AuthenticationContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "FreshSave - Near-Expiry Local Grocery Deals",
-  description: "Find discounted near-expiry groceries in your local neighborhood.",
+  title: "ExpiryGo | Grab it before it's gone.",
+  description: "Near-expiry products from local shops at up to 70% off. Save money, fight food waste, shop smarter.",
+  keywords: ["deals", "local shops", "food waste", "discounts", "near-expiry"],
+  openGraph: {
+    title: "ExpiryGo | Grab it before it's gone.",
+    description: "Near-expiry products from local shops at up to 70% off.",
+    type: "website",
+  }
 };
 
 export default function RootLayout({
