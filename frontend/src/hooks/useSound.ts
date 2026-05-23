@@ -9,6 +9,7 @@ export function useSound() {
     // Initialize AudioContext on first user interaction to comply with browser autoplay policies
     const initAudio = () => {
       if (!audioContextRef.current) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
     };
