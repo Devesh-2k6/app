@@ -13,10 +13,10 @@ import {
   Bell, 
   ShieldCheck,
   Sparkles,
-  Twitter,
-  Instagram,
-  Linkedin,
-  Github
+  MessageCircle,
+  Camera,
+  Briefcase,
+  Code
 } from "lucide-react";
 
 import { useConfetti } from "@/hooks/useConfetti";
@@ -431,16 +431,16 @@ export default function Home() {
               </p>
               <div className="flex gap-4">
                 <a href="#" className="w-10 h-10 rounded-full bg-[#1A1A1A] border border-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:border-emerald-500 hover:bg-emerald-500/10 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-300">
-                  <Twitter size={18} />
+                  <MessageCircle size={18} />
                 </a>
                 <a href="#" className="w-10 h-10 rounded-full bg-[#1A1A1A] border border-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:border-emerald-500 hover:bg-emerald-500/10 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-300">
-                  <Instagram size={18} />
+                  <Camera size={18} />
                 </a>
                 <a href="#" className="w-10 h-10 rounded-full bg-[#1A1A1A] border border-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:border-emerald-500 hover:bg-emerald-500/10 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-300">
-                  <Linkedin size={18} />
+                  <Briefcase size={18} />
                 </a>
                 <a href="#" className="w-10 h-10 rounded-full bg-[#1A1A1A] border border-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:border-emerald-500 hover:bg-emerald-500/10 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all duration-300">
-                  <Github size={18} />
+                  <Code size={18} />
                 </a>
               </div>
             </div>
