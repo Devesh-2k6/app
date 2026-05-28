@@ -102,53 +102,53 @@ export default function ShopSettingsPage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto pb-24">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Shop Settings</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <h1 className="text-2xl font-black tracking-tight text-white">Shop Settings</h1>
+        <p className="mt-1 text-sm text-gray-400 font-medium">
           Manage your store details and update your map location.
         </p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
-        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 sm:p-8">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Store size={20} className="text-emerald-500" /> Store Profile
+        <div className="bg-[#1A1A1A] rounded-3xl border border-white/5 shadow-2xl p-6 sm:p-8 backdrop-blur-3xl bg-gradient-to-br from-[#1A1A1A] to-[#151515]">
+          <h2 className="text-lg font-black tracking-tight text-white mb-6 flex items-center gap-2">
+            <Store size={20} className="text-emerald-400" /> Store Profile
           </h2>
           <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <label className="block text-sm font-bold text-gray-300 mb-2">
                 Shop Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={shopName}
                 onChange={(e) => setShopName(e.target.value)}
-                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                className="w-full bg-[#141414] border border-white/5 rounded-xl px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all font-medium"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <label className="block text-sm font-bold text-gray-300 mb-2">
                 Description
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition resize-none"
+                rows={4}
+                className="w-full bg-[#141414] border border-white/5 rounded-xl px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all font-medium resize-none"
               />
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm p-6 sm:p-8">
+        <div className="bg-[#1A1A1A] rounded-3xl border border-white/5 shadow-2xl p-6 sm:p-8 backdrop-blur-3xl bg-gradient-to-br from-[#1A1A1A] to-[#151515]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <MapPin size={20} className="text-emerald-500" /> Location Settings
+            <h2 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
+              <MapPin size={20} className="text-emerald-400" /> Location Settings
             </h2>
             <button
               type="button"
               onClick={handleGetLocation}
               disabled={isLocating}
-              className="flex items-center justify-center gap-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 rounded-xl px-4 py-2 font-semibold text-sm transition hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50"
+              className="flex items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/25 text-blue-400 border border-blue-500/20 rounded-xl px-4 py-2 font-bold text-sm transition-all disabled:opacity-50"
             >
               {isLocating ? <Loader2 size={16} className="animate-spin" /> : <Navigation size={16} />}
               Update GPS Coordinates
@@ -156,25 +156,25 @@ export default function ShopSettingsPage() {
           </div>
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <label className="block text-sm font-bold text-gray-300 mb-2">
                 Street Address <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                className="w-full bg-[#141414] border border-white/5 rounded-xl px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all font-medium"
               />
             </div>
             {latitude !== null && longitude !== null && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-bold text-gray-300 mb-3 flex items-center gap-2">
                   Map Preview
-                  <span className="ml-2 text-xs font-mono text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
+                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md font-bold">
                     {latitude.toFixed(5)}, {longitude.toFixed(5)}
                   </span>
                 </label>
-                <div className="h-64 w-full rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-inner">
+                <div className="h-64 w-full rounded-2xl overflow-hidden border border-white/5 shadow-2xl relative">
                   <Map lat={latitude} lng={longitude} zoom={16} popupText={shopName || "Your Shop"} />
                 </div>
               </div>
@@ -184,7 +184,7 @@ export default function ShopSettingsPage() {
 
         <div className="flex items-center justify-end gap-4 mt-8">
           {saveSuccess && (
-            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-sm font-semibold">
+            <span className="flex items-center gap-1.5 text-emerald-400 text-sm font-bold animate-pulse">
               <CheckCircle2 size={18} />
               Changes saved successfully!
             </span>
@@ -192,9 +192,9 @@ export default function ShopSettingsPage() {
           <button
             type="submit"
             disabled={isSaving}
-            className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 py-3.5 font-bold shadow-lg shadow-emerald-500/20 transition disabled:opacity-70"
+            className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-[#111111] rounded-xl px-8 py-3.5 font-black text-sm uppercase tracking-wider shadow-lg shadow-emerald-500/10 transition-all disabled:opacity-50"
           >
-            {isSaving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
+            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
             {isSaving ? "Saving..." : "Save Changes"}
           </button>
         </div>

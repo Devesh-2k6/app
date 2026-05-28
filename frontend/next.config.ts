@@ -1,4 +1,11 @@
 import type { NextConfig } from "next";
+import withPWAInit from "@ducanh2912/next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  disable: process.env.NODE_ENV === "development",
+  register: true,
+});
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["10.145.255.106", "localhost", "127.0.0.1"],
@@ -10,6 +17,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "*.supabase.co" },
     ],
   },
+  turbopack: {},
 };
 
-export default nextConfig;
+export default withPWA(nextConfig);

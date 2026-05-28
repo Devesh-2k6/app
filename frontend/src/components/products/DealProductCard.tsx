@@ -64,19 +64,21 @@ export const DealProductCard = React.memo(function DealProductCardBase({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       whileHover={{ y: -4 }}
-      className={`glass-card rounded-3xl ${
+      className={`bg-[#1A1A1A] border ${
         isSurpriseBag
-          ? "border-purple-200 dark:border-purple-900/50 shadow-purple-500/20"
-          : "border-gray-100 dark:border-gray-700/50"
-      } overflow-hidden flex flex-col sm:flex-row gap-4 p-4 ${isDynamicPricing ? "pulse-glow" : ""}`}
+          ? "border-purple-500/20 shadow-[0_0_20px_rgba(168,85,247,0.1)]"
+          : "border-white/5"
+      } rounded-[2rem] overflow-hidden flex flex-col sm:flex-row gap-4 p-4 transition-all duration-300 hover:border-white/10 hover:scale-[1.01] hover:shadow-[0_20px_40px_rgba(0,0,0,0.8)] ${
+        isDynamicPricing ? "pulse-glow" : ""
+      }`}
     >
       <div className="flex gap-4 flex-1">
-        <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 border border-gray-100 dark:border-gray-700 relative">
+        <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0 border border-white/10 relative bg-[#242424]">
           <Image src={imageUrl} alt={name} fill sizes="96px" className="object-cover" />
           {isSurpriseBag && (
-            <div className="absolute inset-0 bg-gradient-to-t from-purple-900/80 to-transparent flex items-end justify-center pb-1">
-              <span className="text-[10px] font-bold text-white flex items-center gap-1">
-                <Package size={10} /> Surprise
+            <div className="absolute inset-0 bg-gradient-to-t from-purple-950/90 to-transparent flex items-end justify-center pb-1.5">
+              <span className="text-[9px] font-black uppercase tracking-wider text-purple-300 flex items-center gap-1">
+                <Package size={9} /> Surprise
               </span>
             </div>
           )}
@@ -84,21 +86,21 @@ export const DealProductCard = React.memo(function DealProductCardBase({
         <div className="flex-1 min-w-0 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-start gap-2">
-              <h2 className="font-bold text-gray-900 dark:text-white truncate">{name}</h2>
+              <h2 className="font-bold text-white truncate text-base">{name}</h2>
               <div className="flex gap-2 items-center flex-shrink-0">
                 {onToggleFavorite && (
                   <button
                     onClick={(e) => onToggleFavorite(id, isFavorite, e)}
-                    className="p-1 -m-1 text-gray-400 hover:text-red-500 transition"
+                    className="p-1 -m-1 text-gray-500 hover:text-red-400 transition"
                   >
                     <Heart size={16} className={isFavorite ? "fill-red-500 text-red-500" : ""} />
                   </button>
                 )}
                 <span
-                  className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                  className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
                     isSurpriseBag
-                      ? "bg-purple-50 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400"
-                      : "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10"
+                      ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                      : "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
                   }`}
                 >
                   -{discountPercent}%
@@ -106,17 +108,17 @@ export const DealProductCard = React.memo(function DealProductCardBase({
               </div>
             </div>
             <div className="flex items-center gap-2 mt-1">
-              <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 truncate">
-                <MapPin size={12} />
+              <p className="text-xs text-gray-400 flex items-center gap-1 truncate font-medium">
+                <MapPin size={12} className="text-gray-500" />
                 {shopSubtitle}
               </p>
               {onToggleFollow && shopId && (
                 <button
                   onClick={(e) => onToggleFollow(shopId, isFollowing, e)}
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition ${
+                  className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full transition-all border ${
                     isFollowing
-                      ? "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300"
-                      : "bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                      ? "bg-white/5 text-gray-400 border-white/5 hover:bg-white/10"
+                      : "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
                   }`}
                 >
                   {isFollowing ? "Following" : "Follow"}
@@ -129,17 +131,17 @@ export const DealProductCard = React.memo(function DealProductCardBase({
             <div>
               <div className="flex items-baseline gap-2">
                 <span
-                  className={`text-lg font-extrabold ${
-                    isDynamicPricing ? "text-orange-500" : "text-emerald-600 dark:text-emerald-400"
+                  className={`text-lg font-black tracking-tight ${
+                    isDynamicPricing ? "text-orange-400" : "text-emerald-400"
                   }`}
                 >
                   ₹{currentPrice.toFixed(2)}
                 </span>
-                <span className="text-sm text-gray-400 line-through">₹{originalPrice.toFixed(2)}</span>
+                <span className="text-xs text-gray-500 line-through">₹{originalPrice.toFixed(2)}</span>
               </div>
               {isDynamicPricing && (
-                <p className="text-[10px] text-orange-500 font-bold flex items-center gap-0.5 mt-0.5 animate-pulse">
-                  <ArrowDownRight size={12} /> Price Dropping!
+                <p className="text-[9px] text-orange-400 font-bold flex items-center gap-0.5 mt-0.5 animate-pulse">
+                  <ArrowDownRight size={10} /> Price Dropping!
                 </p>
               )}
             </div>
@@ -147,24 +149,24 @@ export const DealProductCard = React.memo(function DealProductCardBase({
 
           <div className="flex items-center justify-between mt-2">
             <span
-              className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+              className={`text-[9px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${
                 expiryIsExpired
-                  ? "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+                  ? "bg-white/5 text-gray-500 border-white/5"
                   : isDynamicPricing
-                  ? "bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400"
-                  : "bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
+                  ? "bg-orange-500/10 text-orange-400 border-orange-500/20"
+                  : "bg-red-500/10 text-red-400 border-red-500/20"
               }`}
             >
               <Clock size={10} /> {expiryLabel}
             </span>
-            <span className="text-[10px] text-gray-500 font-semibold">{quantity} left</span>
+            <span className="text-[10px] text-gray-400 font-bold">{quantity} left</span>
           </div>
 
           {hasVoiceNote && (
             <button
               type="button"
               onClick={(e) => onTogglePlay(id, e)}
-              className="mt-2 flex w-max items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+              className="mt-2.5 flex w-max items-center gap-1.5 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
             >
               {isPlaying ? <Pause size={14} /> : <Play size={14} />}
               Voice note
@@ -175,10 +177,10 @@ export const DealProductCard = React.memo(function DealProductCardBase({
 
       {/* Reservation Section */}
       {onReserve && !expiryIsExpired && quantity > 0 && (
-        <div className="sm:w-32 flex flex-col justify-end mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l border-gray-100 dark:border-gray-700 sm:pl-4">
+        <div className="sm:w-32 flex flex-col justify-end mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 sm:border-l border-white/5 sm:pl-4">
           <button
             onClick={() => onReserve(id)}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm py-2 rounded-xl transition shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
+            className="w-full bg-emerald-500 hover:bg-emerald-400 text-[#111111] font-extrabold text-sm py-2.5 rounded-2xl transition-all duration-300 shadow-[0_0_15px_rgba(16,185,129,0.2)] hover:shadow-[0_0_25px_rgba(16,185,129,0.4)] active:scale-[0.98] flex items-center justify-center gap-1.5"
           >
             <Tag size={14} /> Reserve
           </button>

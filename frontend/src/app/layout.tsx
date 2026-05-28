@@ -5,6 +5,8 @@ import "./globals.css";
 import { HydrationZapper } from "@/components/HydrationZapper";
 import { AuthenticationProvider } from "@/contexts/AuthenticationContext";
 
+import { LiveDealToast } from "@/components/ui/LiveDealToast";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -25,9 +27,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen bg-gray-50 dark:bg-gray-900`} suppressHydrationWarning>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#10b981" />
+      </head>
+      <body className={`${inter.className} min-h-screen bg-[#111111] text-white selection:bg-emerald-500/30 overflow-x-hidden relative`} suppressHydrationWarning>
         <HydrationZapper />
-        <AuthenticationProvider>{children}</AuthenticationProvider>
+        <AuthenticationProvider>
+          {children}
+          <LiveDealToast />
+        </AuthenticationProvider>
       </body>
     </html>
   );

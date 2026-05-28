@@ -18,7 +18,7 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from fastapi_cache.decorator import cache
 
-from fastapi import Depends, FastAPI, HTTPException, UploadFile, File
+from fastapi import Depends, FastAPI, HTTPException, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from sqlalchemy import func
@@ -111,14 +111,25 @@ async def lifespan(_app: FastAPI):
     elapsed = time.perf_counter() - start
     logger.info(f"Backend database initialized in {elapsed:.3f} seconds.")
     
-    # Initialize Redis Cache
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-    try:
-        redis = aioredis.from_url(redis_url, encoding="utf8", decode_responses=True)
-        FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
-        logger.info("Redis cache initialized.")
-    except Exception as e:
-        logger.warning(f"Failed to initialize Redis cache: {e}")
+    # Initialize Redis Cache (with short timeout to avoid startup hang)
+    redis_url = os.getenv("REDIS_URL")
+    if redis_url:
+        try:
+            import asyncio
+            redis = aioredis.from_url(redis_url, encoding="utf8", decode_responses=True)
+            # Verify Redis is online with a 0.5s timeout
+            await asyncio.wait_for(redis.ping(), timeout=0.5)
+            FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+            logger.info("Redis cache initialized successfully.")
+        except Exception as e:
+            logger.warning(f"Redis not available ({e}). Using InMemoryBackend.")
+            from fastapi_cache.backends.inmemory import InMemoryBackend
+            FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
+    else:
+        # No Redis URL configured, use in-memory cache
+        logger.info("No REDIS_URL configured. Using InMemoryBackend.")
+        from fastapi_cache.backends.inmemory import InMemoryBackend
+        FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
         
     yield
 
@@ -133,6 +144,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# =========================
+# WEBSOCKETS (REAL-TIME NOTIFICATIONS)
+# =========================
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except Exception:
+                pass
+
+manager = ConnectionManager()
+
+@app.websocket("/ws/notifications")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            # We just keep the connection open, waiting for server broadcasts
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
 
 # =========================
 # AUTH & USERS
@@ -333,7 +379,7 @@ def _get_owner_shop(user: User, db: Session) -> Shop:
     return shop
 
 @app.post("/products/")
-def create_product(
+async def create_product(
     product_in: schemas.ProductCreate,
     user: Annotated[User, Depends(get_current_shop_owner)],
     db: Annotated[Session, Depends(get_db)],
@@ -358,7 +404,17 @@ def create_product(
     db.add(product)
     db.commit()
     db.refresh(product)
-    return _serialize_product(product, shop)
+    
+    serialized = _serialize_product(product, shop)
+    
+    # Broadcast the new deal to all connected clients!
+    import asyncio
+    asyncio.create_task(manager.broadcast({
+        "type": "new_deal",
+        "product": serialized
+    }))
+    
+    return serialized
 
 @app.put("/products/{product_id}")
 def update_product(
@@ -718,3 +774,4 @@ def get_shop_analytics(
         average_rating=shop.average_rating,
         recent_reviews=recent_reviews
     )
+

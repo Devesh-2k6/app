@@ -180,21 +180,27 @@ export default function CustomerDealsPage() {
   const initial = user?.name ? user.name[0].toUpperCase() : "?";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-24">
+    <div className="min-h-screen bg-[#111111] text-white pb-32 overflow-x-hidden relative">
+      {/* Ambient Parallax Background Glows */}
+      <div className="absolute top-0 inset-x-0 h-[100vh] overflow-hidden pointer-events-none z-0">
+        <div className="absolute -top-40 -left-20 w-[60vw] h-[60vw] min-w-[300px] min-h-[300px] bg-emerald-500/10 rounded-full blur-[110px]" />
+        <div className="absolute top-[20%] -right-20 w-[50vw] h-[50vw] min-w-[300px] min-h-[300px] bg-amber-500/5 rounded-full blur-[130px]" />
+      </div>
+
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 bg-white/90 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 pt-4 pb-3">
+      <header className="sticky top-0 z-30 bg-[#161616]/80 backdrop-blur-3xl border-b border-white/5 px-4 pt-4 pb-3 shadow-[0_8px_30px_rgba(0,0,0,0.3)]">
         <div className="max-w-2xl mx-auto">
           {/* Top row: brand + user */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <div className="bg-emerald-500 p-1.5 rounded-xl text-white shadow-lg shadow-emerald-500/30">
-                <Leaf size={16} />
+              <div className="bg-emerald-500 p-1.5 rounded-xl text-white shadow-[0_0_15px_rgba(16,185,129,0.5)]">
+                <Leaf size={16} className="fill-white text-white" />
               </div>
               <div>
-                <h1 className="text-base font-black text-gray-900 dark:text-white leading-none">
-                  Fresh<span className="text-emerald-500">Save</span>
+                <h1 className="text-base font-black text-white leading-none tracking-tight">
+                  Expiry<span className="text-emerald-500">Go</span>
                 </h1>
-                <p className="text-[10px] text-gray-400 leading-none mt-0.5">Nearby deals</p>
+                <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">Nearby deals</p>
               </div>
             </div>
 
@@ -202,11 +208,11 @@ export default function CustomerDealsPage() {
               {/* Notifications bell */}
               <Link
                 href="/notifications"
-                className="relative p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                className="relative p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition text-gray-300 hover:text-white"
                 aria-label="Notifications"
               >
-                <Bell size={20} className="text-gray-600 dark:text-gray-300" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-900" />
+                <Bell size={18} />
+                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
               </Link>
 
               {user ? (
@@ -215,22 +221,22 @@ export default function CustomerDealsPage() {
                   <button
                     id="user-menu-trigger"
                     onClick={() => setShowUserMenu((v) => !v)}
-                    className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 px-2 py-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+                    className="flex items-center gap-1.5 bg-white/5 border border-white/5 hover:bg-white/10 px-2.5 py-1.5 rounded-full transition text-white"
                     aria-label="User menu"
                   >
-                    <div className="w-7 h-7 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-sm">
+                    <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-[#111111] font-black text-xs">
                       {initial}
                     </div>
-                    <ChevronDown size={14} className="text-gray-500 dark:text-gray-400" />
+                    <ChevronDown size={14} className="text-gray-400" />
                   </button>
 
                   {showUserMenu && (
-                    <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="absolute right-0 top-full mt-2 w-56 bg-[#1A1A1A] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                       {/* User info */}
-                      <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
-                        <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+                      <div className="px-4 py-3 border-b border-white/5 bg-white/5">
+                        <p className="text-sm font-bold text-white truncate">{user.name}</p>
+                        <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                        <span className="inline-block mt-1.5 text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">
                           Customer
                         </span>
                       </div>
@@ -239,27 +245,27 @@ export default function CustomerDealsPage() {
                       <Link
                         href="/profile"
                         onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+                        className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-300 hover:text-white hover:bg-white/5 transition"
                       >
-                        <User size={16} className="text-gray-500" />
+                        <User size={16} className="text-gray-400" />
                         View Profile
                       </Link>
                       <Link
                         href="/notifications"
                         onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition"
+                        className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-300 hover:text-white hover:bg-white/5 transition"
                       >
-                        <Bell size={16} className="text-gray-500" />
+                        <Bell size={16} className="text-gray-400" />
                         Notifications
                       </Link>
 
-                      <div className="border-t border-gray-100 dark:border-gray-700" />
+                      <div className="border-t border-white/5" />
 
                       {/* Logout */}
                       <button
                         id="logout-btn"
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-400 hover:bg-red-500/10 transition"
                       >
                         <LogOut size={16} />
                         Log out
@@ -271,7 +277,7 @@ export default function CustomerDealsPage() {
                 /* ── Sign-in link ── */
                 <Link
                   href="/auth?role=customer&tab=login"
-                  className="flex items-center gap-1.5 text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-400 px-3 py-2 rounded-full transition"
+                  className="flex items-center gap-1.5 text-xs font-black text-[#111111] bg-emerald-500 hover:bg-emerald-400 px-4 py-2 rounded-xl transition shadow-[0_0_15px_rgba(16,185,129,0.3)]"
                 >
                   <LogIn size={14} />
                   Sign in
@@ -282,14 +288,14 @@ export default function CustomerDealsPage() {
 
           {/* Search bar */}
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
             <input
               id="deals-search"
               type="search"
-              placeholder="Search deals…"
+              placeholder="Search deals by product name…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#1A1A1A] border border-white/5 text-sm text-white placeholder:text-gray-500 outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all"
             />
           </div>
 
@@ -299,16 +305,16 @@ export default function CustomerDealsPage() {
               <button
                 key={f}
                 onClick={() => setActiveFilter(f)}
-                className={`flex-shrink-0 text-xs font-bold px-4 py-1.5 rounded-full transition-all duration-150 ${
+                className={`flex-shrink-0 text-xs font-bold px-4 py-1.5 rounded-full transition-all duration-150 border ${
                   activeFilter === f
-                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/30"
-                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    ? "bg-emerald-505 text-[#111111] bg-emerald-500 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)] font-black"
+                    : "bg-[#1A1A1A] text-gray-400 border-white/5 hover:text-white hover:border-white/10"
                 }`}
               >
                 {f}
               </button>
             ))}
-            <button className="flex-shrink-0 flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+            <button className="flex-shrink-0 flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full bg-[#1A1A1A] text-gray-400 border border-white/5 hover:text-white hover:border-white/10 transition">
               <SlidersHorizontal size={12} />
               Filter
             </button>
@@ -317,29 +323,29 @@ export default function CustomerDealsPage() {
       </header>
 
       {/* ── Map quick-access banner ─────────────────────────────────── */}
-      <div className="max-w-2xl mx-auto px-4 pt-4 flex gap-2">
+      <div className="max-w-2xl mx-auto px-4 pt-4 flex gap-2 relative z-10">
         <Link
           href="/map"
-          className="flex-1 flex items-center gap-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-3 rounded-2xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:scale-[1.01] transition-all"
+          className="flex-1 flex items-center gap-3 bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 hover:border-emerald-500/40 text-white px-4 py-3 rounded-2xl shadow-lg shadow-black/30 hover:scale-[1.01] transition-all duration-300"
         >
-          <MapPin size={20} className="flex-shrink-0" />
+          <MapPin size={20} className="flex-shrink-0 text-emerald-400" />
           <div className="flex-1">
             <p className="text-sm font-bold leading-none">See deals on the map</p>
-            <p className="text-xs opacity-80 mt-0.5">Find shops near you</p>
+            <p className="text-xs text-gray-400 mt-0.5">Find shops near you</p>
           </div>
-          <span className="text-xs font-bold bg-white/20 px-3 py-1 rounded-full hidden sm:block">Open Map →</span>
+          <span className="text-xs font-bold bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full hidden sm:block">Open Map →</span>
         </Link>
         <button
           onClick={handleUseLocation}
-          className="flex flex-col items-center justify-center bg-white dark:bg-gray-800 border border-emerald-500/30 px-3 py-3 rounded-2xl shadow-sm hover:bg-emerald-50 dark:hover:bg-gray-700 transition flex-shrink-0"
+          className="flex flex-col items-center justify-center bg-[#1A1A1A] border border-emerald-500/20 hover:border-emerald-500/40 hover:bg-emerald-500/5 px-3 py-3 rounded-2xl shadow-sm transition flex-shrink-0"
         >
-          <MapPin size={18} className="text-emerald-500 mb-0.5" />
-          <span className="text-[10px] font-bold text-gray-700 dark:text-gray-300">Nearby</span>
+          <MapPin size={18} className="text-emerald-400 mb-0.5" />
+          <span className="text-[10px] font-bold text-emerald-400">Nearby</span>
         </button>
       </div>
 
       {/* ── Main content ────────────────────────────────────────────── */}
-      <main className="p-4 max-w-2xl mx-auto">
+      <main className="p-4 max-w-2xl mx-auto relative z-10">
         {status === "loading" && (
           <div className="space-y-4 mt-4">
             {[1, 2, 3, 4].map((i) => (
@@ -349,18 +355,18 @@ export default function CustomerDealsPage() {
         )}
 
         {status === "error" && (
-          <div className="py-12 text-center px-4">
-            <p className="text-red-600 dark:text-red-400 text-sm mb-4">
+          <div className="py-16 text-center px-6 bg-[#1A1A1A] border border-white/5 rounded-3xl mt-4">
+            <p className="text-red-400 text-sm font-bold mb-4">
               {errorMessage ?? getErrorMessage(new Error("Failed to load deals"))}
             </p>
-            <p className="text-xs text-gray-500 mb-4">
+            <p className="text-xs text-gray-500 mb-6">
               Make sure the API is running:{" "}
-              <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">uvicorn main:app --port 8000</code>
+              <code className="bg-black/50 px-2 py-1 rounded border border-white/5">uvicorn main:app --port 8000</code>
             </p>
             <button
               type="button"
               onClick={() => void refetch()}
-              className="inline-flex items-center gap-2 bg-emerald-600 text-white font-semibold px-4 py-2 rounded-xl"
+              className="inline-flex items-center gap-2 bg-emerald-500 text-[#111111] font-extrabold px-5 py-2.5 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:scale-[1.02] transition"
             >
               <RefreshCw size={16} />
               Try again
@@ -369,14 +375,14 @@ export default function CustomerDealsPage() {
         )}
 
         {showEmpty && (
-          <div className="py-16 text-center text-gray-500 dark:text-gray-400">
-            <Package size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="font-semibold">No active deals yet.</p>
-            <p className="text-sm mt-1">Shops can add deals from the shopkeeper dashboard.</p>
+          <div className="py-20 text-center text-gray-400 bg-[#1A1A1A] border border-white/5 rounded-3xl mt-4">
+            <Package size={48} className="mx-auto text-gray-600 mb-4" />
+            <p className="font-extrabold text-white">No active deals yet.</p>
+            <p className="text-sm mt-1 text-gray-500">Shops can add deals from the shopkeeper dashboard.</p>
             <button
               type="button"
               onClick={() => void refetch()}
-              className="mt-4 inline-flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold text-sm bg-emerald-50 dark:bg-emerald-500/10 px-4 py-2 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition"
+              className="mt-6 inline-flex items-center gap-2 text-emerald-400 font-bold text-sm bg-emerald-500/10 border border-emerald-500/20 px-5 py-2.5 rounded-xl hover:bg-emerald-500/20 transition-all duration-300"
             >
               <RefreshCw size={14} />
               Refresh
@@ -386,7 +392,7 @@ export default function CustomerDealsPage() {
 
         {showList && (
           <div className="space-y-4 mt-4">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
               {filteredProducts.length} deal{filteredProducts.length !== 1 ? "s" : ""} available
             </p>
             {filteredProducts.map((product, index) => (

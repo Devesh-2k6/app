@@ -23,6 +23,77 @@ import { useConfetti } from "@/hooks/useConfetti";
 import { useSound } from "@/hooks/useSound";
 import AnimatedCounter from "@/components/ui/AnimatedCounter";
 import MagneticButton from "@/components/ui/MagneticButton";
+import LiveDealsSection from "@/components/products/LiveDealsSection";
+
+// Custom inline SVG icons for brands removed in lucide-react v1
+const Twitter = ({ size = 24 }: { size?: number }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
+  </svg>
+);
+
+const Instagram = ({ size = 24 }: { size?: number }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+  </svg>
+);
+
+const Linkedin = ({ size = 24 }: { size?: number }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+    <rect width="4" height="12" x="2" y="9" />
+    <circle cx="4" cy="4" r="2" />
+  </svg>
+);
+
+const Github = ({ size = 24 }: { size?: number }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+    <path d="M9 18c-4.51 2-5-2-7-2" />
+  </svg>
+);
 
 // Dynamically import client components
 const HeroMap = dynamic(() => import('@/components/map/HeroMap'), { ssr: false });
@@ -53,7 +124,7 @@ export default function Home() {
     initial: { opacity: 0, y: 30 },
     whileInView: { opacity: 1, y: 0 },
     viewport: { once: true, margin: "-50px" },
-    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] }
+    transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] as const }
   };
 
   const staggerContainer = {
@@ -68,7 +139,7 @@ export default function Home() {
 
   const staggerItem = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+    show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } }
   };
 
   return (
@@ -200,143 +271,8 @@ export default function Home() {
       {/* Divider */}
       <div className="h-px w-full max-w-7xl mx-auto bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-      {/* Nearby Deals Section */}
-      <section className="max-w-5xl mx-auto px-4 py-24 relative z-10">
-        <motion.div {...fadeInUp} className="mb-12">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles size={16} className="text-emerald-500" />
-            <h3 className="text-emerald-500 font-bold text-sm tracking-widest uppercase">Nearby Deals</h3>
-          </div>
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">Freshness hunting, made easy</h2>
-          <p className="text-gray-400 font-medium text-lg max-w-2xl">Real-time listings from shops in your neighbourhood. Updated hourly to bring you the best local steals.</p>
-        </motion.div>
-
-        <motion.div {...fadeInUp} className="flex flex-wrap gap-3 mb-12 overflow-x-auto pb-2 scrollbar-hide">
-          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-white text-[#111111] font-bold shadow-[0_0_15px_rgba(255,255,255,0.2)] cursor-pointer">All</button>
-          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-[#242424] border border-white/5 text-gray-300 font-semibold hover:bg-white/10 hover:border-white/20 transition-all whitespace-nowrap cursor-pointer">Bakery</button>
-          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-[#242424] border border-white/5 text-gray-300 font-semibold hover:bg-white/10 hover:border-white/20 transition-all whitespace-nowrap cursor-pointer">Dairy</button>
-          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-[#242424] border border-white/5 text-gray-300 font-semibold hover:bg-white/10 hover:border-white/20 transition-all whitespace-nowrap cursor-pointer">Snacks</button>
-          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-[#242424] border border-white/5 text-gray-300 font-semibold hover:bg-white/10 hover:border-white/20 transition-all whitespace-nowrap cursor-pointer">Produce</button>
-        </motion.div>
-
-        <motion.div 
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-50px" }}
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
-        >
-          {/* Card 1 */}
-          <motion.div variants={staggerItem} className="rounded-3xl border border-white/5 bg-[#1A1A1A] overflow-hidden flex flex-col group hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] hover:border-white/10 transition-all duration-500">
-            <div className="bg-gradient-to-br from-[#FFDFB3] to-[#FFC980] h-56 relative flex items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/5 transition-opacity duration-500" />
-              <div className="absolute top-4 right-4 bg-[#FF4C4C] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1 animate-pulse">
-                <Clock size={12} /> Expires today
-              </div>
-              <motion.span whileHover={{ scale: 1.15, rotate: 5 }} className="text-8xl drop-shadow-2xl">🍞</motion.span>
-            </div>
-            <div className="p-6 flex-1 flex flex-col relative">
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#FF4C4C] to-transparent opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
-              <div className="text-gray-400 text-xs font-black tracking-widest uppercase mb-2">Bakery</div>
-              <h4 className="text-2xl font-bold mb-3 text-white group-hover:text-[#FFDFB3] transition-colors">Sourdough Bread</h4>
-              <div className="flex items-center gap-3 mb-5">
-                <span className="text-gray-500 line-through text-sm font-medium">₹80</span>
-                <span className="text-emerald-400 text-3xl font-black">₹28</span>
-                <span className="bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-bold px-2.5 py-1 rounded-md ml-auto">65% off</span>
-              </div>
-              
-              <div className="w-full bg-[#333] rounded-full h-2 mb-4 overflow-hidden border border-[#444]">
-                <div className="bg-gradient-to-r from-red-500 to-red-400 h-full rounded-full relative" style={{ width: '85%' }}>
-                   <div className="absolute inset-0 bg-white/20 animate-pulse" />
-                </div>
-              </div>
-              
-              <div className="text-sm text-gray-400 mb-6 font-medium">Expires in 6 hrs • ABC Bakery</div>
-              
-              <div className="mt-auto flex items-center justify-between pt-4 border-t border-white/5">
-                <div className="flex items-center text-sm font-bold text-gray-300">
-                  <MapPin size={16} className="mr-1.5 text-emerald-500" /> 0.4 km
-                </div>
-                <button onClick={handleReserve} className="bg-[#242424] border border-white/10 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all duration-300 hover:shadow-[0_0_15px_rgba(16,185,129,0.5)] cursor-pointer">
-                  Reserve
-                </button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 2 */}
-          <motion.div variants={staggerItem} className="rounded-3xl border border-white/5 bg-[#1A1A1A] overflow-hidden flex flex-col group hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] hover:border-white/10 transition-all duration-500">
-            <div className="bg-gradient-to-br from-[#C2F0E0] to-[#8EE1C3] h-56 relative flex items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/5 transition-opacity duration-500" />
-              <div className="absolute top-4 right-4 bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-                2 days left
-              </div>
-              <motion.span whileHover={{ scale: 1.15, rotate: -5 }} className="text-8xl drop-shadow-2xl">🥛</motion.span>
-            </div>
-            <div className="p-6 flex-1 flex flex-col relative">
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
-              <div className="text-gray-400 text-xs font-black tracking-widest uppercase mb-2">Dairy</div>
-              <h4 className="text-2xl font-bold mb-3 text-white group-hover:text-[#C2F0E0] transition-colors">Greek Yogurt 4-pack</h4>
-              <div className="flex items-center gap-3 mb-5">
-                <span className="text-gray-500 line-through text-sm font-medium">₹160</span>
-                <span className="text-emerald-400 text-3xl font-black">₹80</span>
-                <span className="bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-bold px-2.5 py-1 rounded-md ml-auto">50% off</span>
-              </div>
-              
-              <div className="w-full bg-[#333] rounded-full h-2 mb-4 overflow-hidden border border-[#444]">
-                <div className="bg-gradient-to-r from-amber-500 to-amber-400 h-full rounded-full" style={{ width: '45%' }}></div>
-              </div>
-              
-              <div className="text-sm text-gray-400 mb-6 font-medium">Expires 25 May • FreshMart</div>
-              
-              <div className="mt-auto flex items-center justify-between pt-4 border-t border-white/5">
-                <div className="flex items-center text-sm font-bold text-gray-300">
-                  <MapPin size={16} className="mr-1.5 text-emerald-500" /> 1.2 km
-                </div>
-                <button onClick={handleReserve} className="bg-[#242424] border border-white/10 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all duration-300 hover:shadow-[0_0_15px_rgba(16,185,129,0.5)] cursor-pointer">
-                  Reserve
-                </button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 3 */}
-          <motion.div variants={staggerItem} className="rounded-3xl border border-white/5 bg-[#1A1A1A] overflow-hidden flex flex-col group hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] hover:border-white/10 transition-all duration-500">
-            <div className="bg-gradient-to-br from-[#DFD8F9] to-[#C3B8F5] h-56 relative flex items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/5 transition-opacity duration-500" />
-              <div className="absolute top-4 right-4 bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-                3 days
-              </div>
-              <motion.span whileHover={{ scale: 1.15, rotate: 10 }} className="text-8xl drop-shadow-2xl">🍟</motion.span>
-            </div>
-            <div className="p-6 flex-1 flex flex-col relative">
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
-              <div className="text-gray-400 text-xs font-black tracking-widest uppercase mb-2">Snacks</div>
-              <h4 className="text-2xl font-bold mb-3 text-white group-hover:text-[#DFD8F9] transition-colors">Chips Variety Box ×8</h4>
-              <div className="flex items-center gap-3 mb-5">
-                <span className="text-gray-500 line-through text-sm font-medium">₹240</span>
-                <span className="text-emerald-400 text-3xl font-black">₹120</span>
-                <span className="bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-bold px-2.5 py-1 rounded-md ml-auto">50% off</span>
-              </div>
-              
-              <div className="w-full bg-[#333] rounded-full h-2 mb-4 overflow-hidden border border-[#444]">
-                <div className="bg-gradient-to-r from-indigo-500 to-indigo-400 h-full rounded-full" style={{ width: '20%' }}></div>
-              </div>
-              
-              <div className="text-sm text-gray-400 mb-6 font-medium">Expires 26 May • QuickStore</div>
-              
-              <div className="mt-auto flex items-center justify-between pt-4 border-t border-white/5">
-                <div className="flex items-center text-sm font-bold text-gray-300">
-                  <MapPin size={16} className="mr-1.5 text-emerald-500" /> 2.1 km
-                </div>
-                <button onClick={handleReserve} className="bg-[#242424] border border-white/10 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all duration-300 hover:shadow-[0_0_15px_rgba(16,185,129,0.5)] cursor-pointer">
-                  Reserve
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      </section>
+      {/* Live Deals Section from Backend */}
+      <LiveDealsSection />
 
       {/* Divider */}
       <div className="h-px w-full max-w-7xl mx-auto bg-gradient-to-r from-transparent via-white/10 to-transparent" />
