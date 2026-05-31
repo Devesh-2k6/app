@@ -1,0 +1,6 @@
+{
+  "buildCommand": "pip install -r backend/requirements.txt",
+  "installCommand": "",
+  "outputDirectory": ".next",
+  "framework": "nextjs"
+}

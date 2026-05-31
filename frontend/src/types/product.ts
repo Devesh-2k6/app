@@ -22,11 +22,13 @@ export type ApiProduct = {
   discount_price: number;
   current_price: number | null;
   quantity: number;
+  manufacturing_date: string;
   expiry_date: string;
   category: ProductCategory;
   front_image_url: string;
   expiry_image_url: string;
   voice_note_url: string | null;
+  description: string | null;
   is_active: boolean;
   created_at: string;
   
@@ -37,7 +39,7 @@ export type ApiProduct = {
   shop: ApiShopSummary | null;
 };
 
-export type ApiProductCreate = Omit<ApiProduct, "id" | "created_at" | "shop" | "is_active" | "shop_id" | "current_price">;
+export type ApiProductCreate = Omit<ApiProduct, "id" | "created_at" | "shop" | "is_active" | "shop_id" | "current_price" | "discount_price">;
 
 export type ReservationStatus = "PENDING" | "COMPLETED" | "CANCELLED";
 export type PaymentStatus = "UNPAID" | "PAID" | "REFUNDED";
@@ -87,4 +89,50 @@ export type ApiAnalytics = {
   active_reservations: number;
   average_rating: number;
   recent_reviews: ApiReview[];
+  total_products?: number;
+  active_deals?: number;
+  orders_received?: number;
+  revenue_summary?: number;
 };
+
+export type ApiNotification = {
+  id: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+};
+
+export type OrderType = "PICKUP" | "DELIVERY";
+export type OrderStatus = "PENDING" | "ACCEPTED" | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED";
+
+export type ApiOrder = {
+  id: string;
+  customer_id: string;
+  shopkeeper_id: string;
+  shop_id: string;
+  product_id: string;
+  order_type: OrderType;
+  status: OrderStatus;
+  quantity: number;
+  total_price: number;
+  delivery_fee: number;
+  customer_name: string | null;
+  customer_phone: string | null;
+  delivery_address: string | null;
+  created_at: string;
+  completed_at: string | null;
+  product: ApiProduct;
+};
+
+export type ApiOrderCreate = {
+  product_id: string;
+  order_type: OrderType;
+  quantity: number;
+  delivery_fee?: number;
+  customer_name?: string;
+  customer_phone?: string;
+  delivery_address?: string;
+};
+
+

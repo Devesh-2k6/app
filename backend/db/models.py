@@ -40,6 +40,7 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     is_shop_owner: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    phone_number: Mapped[str | None] = mapped_column(String(255), nullable=True)
     
     # Impact Tracking (Gamification)
     total_money_saved: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
@@ -52,6 +53,8 @@ class User(Base):
     notifications: Mapped[list["Notification"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     favorites: Mapped[list["Favorite"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     following: Mapped[list["Follower"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    orders_placed: Mapped[list["Order"]] = relationship("Order", foreign_keys="[Order.customer_id]", back_populates="customer", cascade="all, delete-orphan")
+    orders_managed: Mapped[list["Order"]] = relationship("Order", foreign_keys="[Order.shopkeeper_id]", back_populates="shopkeeper", cascade="all, delete-orphan")
 
 class Shop(Base):
     __tablename__ = "shops"
@@ -73,6 +76,7 @@ class Shop(Base):
     reservations: Mapped[list["Reservation"]] = relationship(back_populates="shop", cascade="all, delete-orphan")
     reviews: Mapped[list["Review"]] = relationship(back_populates="shop", cascade="all, delete-orphan")
     followers: Mapped[list["Follower"]] = relationship(back_populates="shop", cascade="all, delete-orphan")
+    orders: Mapped[list["Order"]] = relationship("Order", back_populates="shop", cascade="all, delete-orphan")
 
 class Product(Base):
     __tablename__ = "products"
@@ -84,10 +88,12 @@ class Product(Base):
     original_price: Mapped[float] = mapped_column(Float, nullable=False)
     discount_price: Mapped[float] = mapped_column(Float, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
+    manufacturing_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     expiry_date: Mapped[datetime] = mapped_column(DateTime, index=True, nullable=False)
     front_image_url: Mapped[str] = mapped_column(Text, nullable=False)
     expiry_image_url: Mapped[str] = mapped_column(Text, nullable=False)
     voice_note_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
@@ -101,6 +107,7 @@ class Product(Base):
     shop: Mapped["Shop"] = relationship(back_populates="products")
     reservations: Mapped[list["Reservation"]] = relationship(back_populates="product", cascade="all, delete-orphan")
     favorites: Mapped[list["Favorite"]] = relationship(back_populates="product", cascade="all, delete-orphan")
+    orders: Mapped[list["Order"]] = relationship("Order", back_populates="product", cascade="all, delete-orphan")
 
 class Favorite(Base):
     __tablename__ = "favorites"
@@ -171,3 +178,30 @@ class Notification(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     user: Mapped["User"] = relationship(back_populates="notifications")
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    customer_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), index=True, nullable=False)
+    shopkeeper_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), index=True, nullable=False)
+    shop_id: Mapped[str] = mapped_column(String(36), ForeignKey("shops.id"), index=True, nullable=False)
+    product_id: Mapped[str] = mapped_column(String(36), ForeignKey("products.id"), index=True, nullable=False)
+    
+    order_type: Mapped[str] = mapped_column(String(50), default="PICKUP", nullable=False) # "PICKUP" or "DELIVERY"
+    status: Mapped[str] = mapped_column(String(50), default="PENDING", nullable=False) # "PENDING", "ACCEPTED", "OUT_FOR_DELIVERY", "DELIVERED", "CANCELLED"
+    quantity: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    total_price: Mapped[float] = mapped_column(Float, nullable=False)
+    delivery_fee: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    
+    customer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    customer_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    delivery_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    customer: Mapped["User"] = relationship("User", foreign_keys=[customer_id], back_populates="orders_placed")
+    shopkeeper: Mapped["User"] = relationship("User", foreign_keys=[shopkeeper_id], back_populates="orders_managed")
+    shop: Mapped["Shop"] = relationship("Shop", back_populates="orders")
+    product: Mapped["Product"] = relationship("Product", back_populates="orders")

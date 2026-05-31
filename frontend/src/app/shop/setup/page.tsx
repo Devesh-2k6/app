@@ -4,9 +4,15 @@ import { useState, useEffect } from "react";
 import { getMyShop } from "@/services/shops";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Store, MapPin, CheckCircle2, Loader2, Navigation, Info, ShoppingBag } from "lucide-react";
+import { Store, MapPin, CheckCircle2, Loader2, Navigation, Info, ShoppingBag, Search } from "lucide-react";
 import Map from "@/components/Map";
 import { createShop } from "@/services/shops";
+
+interface OsmSuggestion {
+  display_name: string;
+  lat: string;
+  lon: string;
+}
 
 export default function ShopSetupPage() {
   const router = useRouter();
@@ -20,8 +26,43 @@ export default function ShopSetupPage() {
   const [longitude, setLongitude] = useState<number | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   
+  const [suggestions, setSuggestions] = useState<OsmSuggestion[]>([]);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const handleSearchAddress = async () => {
+    if (!address.trim()) return;
+    setIsSearchingAddress(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&addressdetails=1&limit=5`,
+        {
+          headers: {
+            "User-Agent": "ExpiryGo-App",
+          },
+        }
+      );
+      const data = await res.json();
+      setSuggestions(data || []);
+      if (!data || data.length === 0) {
+        alert("No address suggestions found. Please verify the address spelling or set location manually.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to fetch address suggestions. Please set location manually.");
+    } finally {
+      setIsSearchingAddress(false);
+    }
+  };
+
+  const handleSelectSuggestion = (sug: OsmSuggestion) => {
+    setAddress(sug.display_name);
+    setLatitude(parseFloat(sug.lat));
+    setLongitude(parseFloat(sug.lon));
+    setSuggestions([]);
+  };
 
   // Shop type options
   useEffect(() => {
@@ -47,14 +88,34 @@ export default function ShopSetupPage() {
           setIsLocating(false);
         },
         (error) => {
-          console.error("Error getting location:", error);
-          setIsLocating(false);
-          alert("Could not get your location. Please ensure you have granted location permissions.");
+          console.warn("GPS failed, falling back to IP geolocation:", error);
+          fetch("http://api.ipstack.com/check?access_key=f06e35bdacbd8a36738efbf3f020c125")
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.latitude && data.longitude) {
+                setLatitude(data.latitude);
+                setLongitude(data.longitude);
+              } else {
+                alert("Could not get location. " + error.message);
+              }
+            })
+            .catch(() => alert("Could not get location. " + error.message))
+            .finally(() => setIsLocating(false));
         }
       );
     } else {
-      setIsLocating(false);
-      alert("Geolocation is not supported by your browser.");
+      fetch("http://api.ipstack.com/check?access_key=f06e35bdacbd8a36738efbf3f020c125")
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.latitude && data.longitude) {
+            setLatitude(data.latitude);
+            setLongitude(data.longitude);
+          } else {
+            alert("Geolocation is not supported by your browser.");
+          }
+        })
+        .catch(() => alert("Geolocation is not supported by your browser."))
+        .finally(() => setIsLocating(false));
     }
   };
 
@@ -205,13 +266,48 @@ export default function ShopSetupPage() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Street Address <span className="text-red-500">*</span></label>
-                <input 
-                  type="text" 
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="123 Main St, City" 
-                  className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
-                />
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input 
+                      type="text" 
+                      value={address}
+                      onChange={(e) => {
+                        setAddress(e.target.value);
+                        if (suggestions.length > 0) setSuggestions([]);
+                      }}
+                      placeholder="e.g. 123 Main St, London" 
+                      className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSearchAddress}
+                    disabled={isSearchingAddress || !address.trim()}
+                    className="px-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-sm transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSearchingAddress ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Search size={16} />
+                    )}
+                    Search
+                  </button>
+                </div>
+                
+                {suggestions.length > 0 && (
+                  <div className="mt-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-20 relative max-h-60 overflow-y-auto">
+                    {suggestions.map((sug, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSelectSuggestion(sug)}
+                        className="w-full text-left px-4 py-2.5 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-sm border-b border-gray-50 dark:border-gray-700/50 last:border-none text-gray-700 dark:text-gray-300 font-medium transition"
+                      >
+                        {sug.display_name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl p-4">

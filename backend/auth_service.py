@@ -11,9 +11,11 @@ from sqlalchemy.orm import Session
 from db.models import User
 from db.session import get_db
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-me-in-production-use-long-random-secret")
+from config import settings
+
+SECRET_KEY = settings.JWT_SECRET_KEY
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_DAYS = int(os.getenv("ACCESS_TOKEN_EXPIRE_DAYS", "7"))
+ACCESS_TOKEN_EXPIRE_DAYS = settings.ACCESS_TOKEN_EXPIRE_DAYS
 
 security = HTTPBearer(auto_error=False)
 

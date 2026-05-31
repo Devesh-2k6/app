@@ -3,13 +3,13 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, Leaf, Loader2, Store, ShoppingBag } from "lucide-react";
+import { Eye, EyeOff, Leaf, Loader2, Store, ShoppingBag, XCircle, Sparkles } from "lucide-react";
 
 import { getErrorMessage } from "@/api/errors";
 import { useAuth } from "@/contexts/AuthenticationContext";
 import { clearRoleIntent, getRoleIntent, setRoleIntent } from "@/lib/auth-storage";
 import { getMyShop } from "@/services/shops";
-import { login, register } from "@/services/auth";
+import { login, register, sendOtp, verifyOtp } from "@/services/auth";
 
 type Tab = "login" | "signup";
 
@@ -30,6 +30,42 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // OTP Verification States
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+
+  const handleVerifyAndRegister = async (e: FormEvent) => {
+    e.preventDefault();
+    setOtpError("");
+    setVerifyingOtp(true);
+    try {
+      const vRes = await verifyOtp(phoneNumber.trim(), otpCode.trim());
+      if (vRes.verified) {
+        setSubmitting(true);
+        const res = await register({
+          name: name.trim(),
+          email: email.trim(),
+          password,
+          is_shop_owner: isShopOwner,
+          phone_number: phoneNumber.trim(),
+        });
+        loginUser(res.user, res.access_token);
+        clearRoleIntent();
+        setShowOtpModal(false);
+        await redirectAfterAuth(res.user.is_shop_owner);
+      }
+    } catch (err: unknown) {
+      setOtpError(getErrorMessage(err));
+    } finally {
+      setVerifyingOtp(false);
+      setSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (intentParam === "shop_owner") {
@@ -88,26 +124,30 @@ export default function AuthPage() {
         setError("Passwords do not match.");
         return;
       }
+      if (!phoneNumber.trim()) {
+        setError("Mobile phone number is required for verification.");
+        return;
+      }
+      
+      setSendingOtp(true);
+      try {
+        await sendOtp(phoneNumber.trim());
+        setShowOtpModal(true);
+        return;
+      } catch (err) {
+        setError("Failed to send OTP verification code: " + getErrorMessage(err));
+        return;
+      } finally {
+        setSendingOtp(false);
+      }
     }
 
     setSubmitting(true);
     try {
-      if (tab === "signup") {
-        const res = await register({
-          name: name.trim(),
-          email: email.trim(),
-          password,
-          is_shop_owner: isShopOwner,
-        });
-        loginUser(res.user, res.access_token);
-        clearRoleIntent();
-        await redirectAfterAuth(res.user.is_shop_owner);
-      } else {
-        const res = await login({ email: email.trim(), password });
-        loginUser(res.user, res.access_token);
-        clearRoleIntent();
-        await redirectAfterAuth(res.user.is_shop_owner);
-      }
+      const res = await login({ email: email.trim(), password });
+      loginUser(res.user, res.access_token);
+      clearRoleIntent();
+      await redirectAfterAuth(res.user.is_shop_owner);
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {
@@ -210,6 +250,19 @@ export default function AuthPage() {
                   </button>
                 </div>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  required
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  placeholder="e.g., 9876543210"
+                />
+              </div>
             </>
           )}
 
@@ -293,6 +346,79 @@ export default function AuthPage() {
           .
         </p>
       </div>
+
+      {/* OTP Verification Modal */}
+      {showOtpModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl w-full max-w-sm shadow-2xl p-6 relative">
+            <button
+              onClick={() => setShowOtpModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+            >
+              <XCircle size={20} />
+            </button>
+
+            <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-sm mb-4">
+              <Sparkles size={18} />
+              OTP SMS Verification
+            </div>
+
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">
+              Verify Mobile Number
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
+              We simulated dispatching a 6-digit OTP code to +91 {phoneNumber}. Please check your backend console logs.
+            </p>
+
+            <form onSubmit={handleVerifyAndRegister} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                  Enter 6-Digit Code
+                </label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  required
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                  placeholder="e.g., 123456"
+                  className="w-full text-center tracking-widest text-xl font-bold rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3.5 outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              {otpError && (
+                <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-lg p-2.5">
+                  ❌ {otpError}
+                </p>
+              )}
+
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowOtpModal(false)}
+                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={verifyingOtp || otpCode.length !== 6 || submitting}
+                  className="flex-1 px-4 py-3 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm flex items-center justify-center gap-1.5 shadow-lg shadow-purple-500/25"
+                >
+                  {verifyingOtp ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>Verify Code</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -29,7 +29,7 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
   const navigation = [
     { name: "Dashboard", href: "/shop", icon: LayoutDashboard },
     { name: "Products", href: "/shop/products", icon: Package },
-    { name: "Add Product", href: "/shop/add", icon: PlusCircle },
+    { name: "Add Product", href: "/shop/products/add", icon: PlusCircle },
     { name: "Reservations", href: "/shop/reservations", icon: ShieldCheck },
     { name: "Settings", href: "/shop/settings", icon: Settings },
   ];
@@ -39,6 +39,18 @@ export default function ShopLayout({ children }: { children: React.ReactNode }) 
   const displayName = user?.name ?? "Shop Owner";
   const displayEmail = user?.email ?? "";
   const initial = (user?.name?.[0] ?? "S").toUpperCase();
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (!user) {
+        router.replace("/auth?role=shop_owner&tab=login");
+        return;
+      }
+      if (!user.is_shop_owner) {
+        router.replace("/deals");
+      }
+    }
+  }, [isLoading, user, router]);
 
   const handleLogout = () => {
     logout();

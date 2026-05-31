@@ -1,12 +1,12 @@
-import os
 import uuid
 from typing import Optional
 from fastapi import UploadFile, HTTPException
 from supabase import create_client, Client
+from config import settings
 
 def get_supabase_client() -> Optional[Client]:
-    url = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_ANON_KEY") or os.getenv("SUPABASE_KEY")
+    url = settings.SUPABASE_URL
+    key = settings.SUPABASE_ANON_KEY
     if not url or not key:
         return None
     return create_client(url, key)

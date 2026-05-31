@@ -65,3 +65,16 @@ export async function leaveReview(shopId: string, rating: number, comment?: stri
     json: { rating, comment },
   });
 }
+
+export async function getMlDiagnostics(): Promise<{
+  weights: Record<string, number>;
+  bias: number;
+  epochs: number;
+  learning_rate: number;
+  sample_count: number;
+  loss_history: Array<{ epoch: number; loss: number }>;
+  algorithm: string;
+  accuracy: number;
+}> {
+  return apiRequest<any>("/shops/me/ml-diagnostics");
+}

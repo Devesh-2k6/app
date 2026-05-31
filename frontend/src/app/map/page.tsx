@@ -12,6 +12,7 @@ import type { MapMarker } from "@/components/MapComponent";
 import { listShops, type ShopWithDescription } from "@/services/shops";
 import { getProducts } from "@/services/products";
 import type { ApiProduct } from "@/types/product";
+import { getSafeImageUrl } from "@/lib/images";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
@@ -36,6 +37,20 @@ export default function MapDiscovery() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedShop, setSelectedShop] = useState<SelectedShop | null>(null);
   const [search, setSearch] = useState("");
+  const [userLat, setUserLat] = useState<number | null>(null);
+  const [userLng, setUserLng] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("http://api.ipstack.com/check?access_key=f06e35bdacbd8a36738efbf3f020c125")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.latitude && data.longitude) {
+          setUserLat(data.latitude);
+          setUserLng(data.longitude);
+        }
+      })
+      .catch((err) => console.error("Map IP geolocation failed:", err));
+  }, []);
 
   const load = useCallback(async () => {
     setStatus("loading");
@@ -69,6 +84,9 @@ export default function MapDiscovery() {
   }, [shops, search]);
 
   const mapCenter = useMemo((): [number, number] => {
+    if (userLat !== null && userLng !== null) {
+      return [userLat, userLng];
+    }
     if (filteredShops.length > 0) {
       const lat =
         filteredShops.reduce((sum, s) => sum + s.latitude, 0) / filteredShops.length;
@@ -77,7 +95,7 @@ export default function MapDiscovery() {
       return [lat, lng];
     }
     return FALLBACK_CENTER;
-  }, [filteredShops]);
+  }, [filteredShops, userLat, userLng]);
 
   const mapMarkers: MapMarker[] = useMemo(
     () =>
@@ -184,7 +202,7 @@ export default function MapDiscovery() {
                   >
                     <div className="h-20 w-full bg-gray-200 rounded-xl mb-3 overflow-hidden relative">
                       <Image
-                        src={p.front_image_url}
+                        src={getSafeImageUrl(p.front_image_url)}
                         alt={p.name}
                         fill
                         sizes="140px"

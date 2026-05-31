@@ -52,11 +52,11 @@ export default function HeroMap() {
     setIcon(createPulseIcon());
   }, []);
 
-  if (!mounted || !icon) return <div className="w-full h-full bg-[#262626] animate-pulse rounded-3xl"></div>;
+  if (!mounted || !icon) return <div className="w-full h-full bg-emerald-50/50 animate-pulse rounded-3xl"></div>;
 
   return (
-    <div className="w-full h-full rounded-3xl overflow-hidden shadow-2xl border border-[#3A3A3A] relative z-10 group">
-      <div className="absolute inset-0 pointer-events-none rounded-3xl shadow-[inset_0_0_50px_rgba(0,0,0,0.8)] z-20" />
+    <div className="w-full h-full rounded-3xl overflow-hidden shadow-2xl border border-emerald-100/50 relative z-10 group">
+      <div className="absolute inset-0 pointer-events-none rounded-3xl shadow-[inset_0_0_40px_rgba(16,185,129,0.05)] z-20" />
       <MapContainer 
         center={CHENNAI_CENTER} 
         zoom={13} 
@@ -65,10 +65,10 @@ export default function HeroMap() {
         zoomControl={false}
       >
         <MapResizer />
-        {/* Dark mode map tiles (CartoDB Dark Matter) */}
+        {/* Light mode map tiles (CartoDB Positron) */}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
         {LIVE_DEALS.map((deal) => (
           <Marker key={deal.id} position={deal.pos as [number, number]} icon={icon}>
@@ -82,13 +82,13 @@ export default function HeroMap() {
         ))}
       </MapContainer>
       
-      {/* Overlay to catch clicks and prevent map capturing scroll until clicked (optional, but good for landing page) */}
-      <div className="absolute bottom-4 left-4 z-20 bg-[#1A1A1A]/80 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 flex items-center gap-2">
+      {/* Overlay to catch clicks and prevent map capturing scroll until clicked */}
+      <div className="absolute bottom-4 left-4 z-20 bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl border border-emerald-100 shadow-lg shadow-emerald-950/5 flex items-center gap-2">
         <span className="relative flex h-3 w-3">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
           <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
         </span>
-        <span className="text-xs font-bold text-white uppercase tracking-widest">Live Deals Map</span>
+        <span className="text-xs font-bold text-slate-800 uppercase tracking-widest">Live Deals Map</span>
       </div>
     </div>
   );

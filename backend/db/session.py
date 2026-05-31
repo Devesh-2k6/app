@@ -8,12 +8,14 @@ from sqlalchemy.pool import StaticPool
 
 from db.base import Base
 
+from config import settings
+
 _data_dir = Path(__file__).resolve().parent.parent / "data"
 DEFAULT_URL = f"sqlite:///{_data_dir / 'freshsave.db'}"
 
 
 def get_database_url() -> str:
-    url = os.getenv("DATABASE_URL", DEFAULT_URL).strip()
+    url = settings.DATABASE_URL.strip() if settings.DATABASE_URL else DEFAULT_URL
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
     return url

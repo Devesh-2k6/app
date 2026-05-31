@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Loader2,
   LogIn,
   MapPin,
   Package,
@@ -16,6 +15,11 @@ import {
   ChevronDown,
   Leaf,
   SlidersHorizontal,
+  X,
+  Truck,
+  Phone,
+  ShoppingBag,
+  Loader2,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthenticationContext";
 import { DealProductCard } from "@/components/products/DealProductCard";
@@ -23,13 +27,13 @@ import { DealProductSkeleton } from "@/components/products/DealProductSkeleton";
 import { getErrorMessage } from "@/api/errors";
 import { useProducts } from "@/hooks/useProducts";
 import { buildDealProductCardProps } from "@/lib/products/map-deal-product";
-import { createReservation } from "@/services/reservations";
-import { addFavorite, removeFavorite, getFavorites } from "@/services/products";
+import { createOrder } from "@/services/orders";
+import { addFavorite, removeFavorite, getFavorites, getRecommendedProducts } from "@/services/products";
 import { getMyFollowing, followShop, unfollowShop } from "@/services/shops";
 import { BottomNav } from "@/components/BottomNav";
-import type { ProductCategory } from "@/types/product";
+import type { ProductCategory, ApiProduct } from "@/types/product";
 
-const FILTERS = ["All", "BAKERY", "DAIRY", "PRODUCE", "MEAT", "PANTRY", "PREPARED_FOOD", "OTHER"];
+const FILTERS = ["All", "AI Recommended ✨", "BAKERY", "DAIRY", "PRODUCE", "MEAT", "PANTRY", "PREPARED_FOOD", "OTHER"];
 
 export default function CustomerDealsPage() {
   const { user, logout } = useAuth();
@@ -43,10 +47,37 @@ export default function CustomerDealsPage() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [following, setFollowing] = useState<Set<string>>(new Set());
 
+  // Order options modal states
+  const [selectedProductForOrder, setSelectedProductForOrder] = useState<ApiProduct | null>(null);
+  const [orderType, setOrderType] = useState<"PICKUP" | "DELIVERY">("PICKUP");
+  const [deliveryName, setDeliveryName] = useState("");
+  const [deliveryPhone, setDeliveryPhone] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+
+  const [recommendedProducts, setRecommendedProducts] = useState<ApiProduct[]>([]);
+  const [loadingRecommended, setLoadingRecommended] = useState(false);
+
+  useEffect(() => {
+    if (activeFilter === "AI Recommended ✨") {
+      setLoadingRecommended(true);
+      getRecommendedProducts()
+        .then(setRecommendedProducts)
+        .catch(console.error)
+        .finally(() => setLoadingRecommended(false));
+    }
+  }, [activeFilter]);
+
+  useEffect(() => {
+    if (user) {
+      setDeliveryName(user.name);
+    }
+  }, [user]);
+
   const { products, status, errorMessage, refetch } = useProducts({ 
     hideExpired: true,
     q: search || undefined,
-    category: activeFilter === "All" ? undefined : (activeFilter as ProductCategory),
+    category: (activeFilter === "All" || activeFilter === "AI Recommended ✨") ? undefined : (activeFilter as ProductCategory),
     lat,
     lng,
     radius_km: lat ? 50 : undefined
@@ -78,6 +109,19 @@ export default function CustomerDealsPage() {
     }
   }, [user]);
 
+  // Auto IP Geolocation on mount
+  useEffect(() => {
+    fetch("http://api.ipstack.com/check?access_key=f06e35bdacbd8a36738efbf3f020c125")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.latitude && data.longitude) {
+          setLat(data.latitude);
+          setLng(data.longitude);
+        }
+      })
+      .catch((err) => console.error("Auto IP location failed:", err));
+  }, []);
+
   const handleToggleFavorite = async (id: string, isFav: boolean, e: React.MouseEvent) => {
     e.preventDefault();
     if (!user) {
@@ -100,8 +144,8 @@ export default function CustomerDealsPage() {
           return next;
         });
       }
-    } catch (err: any) {
-      alert(err.message || "Failed to update favorites.");
+    } catch (err) {
+      alert(getErrorMessage(err));
     }
   };
 
@@ -127,8 +171,8 @@ export default function CustomerDealsPage() {
           return next;
         });
       }
-    } catch (err: any) {
-      alert(err.message || "Failed to update following.");
+    } catch (err) {
+      alert(getErrorMessage(err));
     }
   };
 
@@ -142,18 +186,54 @@ export default function CustomerDealsPage() {
     router.push("/");
   };
 
-  const handleReserve = async (productId: string) => {
+  const handleReserve = (productId: string) => {
     if (!user) {
       router.push("/auth?role=customer&tab=login");
       return;
     }
+    const found = products.find((p) => p.id === productId);
+    if (found) {
+      setSelectedProductForOrder(found);
+      setOrderType("PICKUP");
+      setDeliveryName(user.name);
+      setDeliveryPhone("");
+      setDeliveryAddress("");
+    }
+  };
+
+  const handleConfirmOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProductForOrder) return;
     
+    if (orderType === "DELIVERY") {
+      if (!deliveryName.trim() || !deliveryPhone.trim() || !deliveryAddress.trim()) {
+        alert("Please fill in all delivery details.");
+        return;
+      }
+    }
+    
+    setIsPlacingOrder(true);
     try {
-      await createReservation(productId, 1); // defaulting to quantity 1 for simple 1-click reserve
-      alert("Item reserved successfully! View your reservations in your Profile.");
-      refetch(); // Refresh list to show updated quantities
-    } catch (err: any) {
-      alert(err.message || "Failed to reserve item.");
+      await createOrder({
+        product_id: selectedProductForOrder.id,
+        order_type: orderType,
+        quantity: 1,
+        delivery_fee: orderType === "DELIVERY" ? 45.0 : 0.0,
+        customer_name: orderType === "DELIVERY" ? deliveryName.trim() : user?.name,
+        customer_phone: orderType === "DELIVERY" ? deliveryPhone.trim() : undefined,
+        delivery_address: orderType === "DELIVERY" ? deliveryAddress.trim() : undefined,
+      });
+      alert(
+        orderType === "DELIVERY"
+          ? "Delivery request placed successfully! The shop will review it shortly."
+          : "Reservation placed successfully! View it in your reservations page."
+      );
+      setSelectedProductForOrder(null);
+      void refetch();
+    } catch (err) {
+      alert("Failed to place order: " + getErrorMessage(err));
+    } finally {
+      setIsPlacingOrder(false);
     }
   };
 
@@ -164,18 +244,43 @@ export default function CustomerDealsPage() {
           setLat(pos.coords.latitude);
           setLng(pos.coords.longitude);
         },
-        (err) => alert("Could not get location. " + err.message)
+        (err) => {
+          console.warn("GPS failed, falling back to IP geolocation:", err);
+          fetch("http://api.ipstack.com/check?access_key=f06e35bdacbd8a36738efbf3f020c125")
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.latitude && data.longitude) {
+                setLat(data.latitude);
+                setLng(data.longitude);
+              } else {
+                alert("Could not get location. " + err.message);
+              }
+            })
+            .catch(() => alert("Could not get location. " + err.message));
+        }
       );
     } else {
-      alert("Geolocation is not supported by your browser.");
+      fetch("http://api.ipstack.com/check?access_key=f06e35bdacbd8a36738efbf3f020c125")
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.latitude && data.longitude) {
+            setLat(data.latitude);
+            setLng(data.longitude);
+          } else {
+            alert("Geolocation is not supported by your browser.");
+          }
+        })
+        .catch(() => alert("Geolocation is not supported by your browser."));
     }
   };
 
-  const filteredProducts = products; // Backend already handles search/category filters
+  const isAiRecommended = activeFilter === "AI Recommended ✨";
+  const displayProducts = isAiRecommended ? recommendedProducts : products;
+  const displayStatus = isAiRecommended ? (loadingRecommended ? "loading" : (recommendedProducts.length > 0 ? "success" : "empty")) : status;
 
-  const showList = status === "success" && filteredProducts.length > 0;
+  const showList = displayStatus === "success" && displayProducts.length > 0;
   const showEmpty =
-    (status === "empty" || (status === "success" && filteredProducts.length === 0));
+    (displayStatus === "empty" || (displayStatus === "success" && displayProducts.length === 0));
 
   const initial = user?.name ? user.name[0].toUpperCase() : "?";
 
@@ -340,7 +445,7 @@ export default function CustomerDealsPage() {
 
       {/* ── Main content ────────────────────────────────────────────── */}
       <main className="p-4 max-w-2xl mx-auto">
-        {status === "loading" && (
+        {displayStatus === "loading" && (
           <div className="space-y-4 mt-4">
             {[1, 2, 3, 4].map((i) => (
               <DealProductSkeleton key={i} />
@@ -348,7 +453,7 @@ export default function CustomerDealsPage() {
           </div>
         )}
 
-        {status === "error" && (
+        {displayStatus === "error" && (
           <div className="py-12 text-center px-4">
             <p className="text-red-600 dark:text-red-400 text-sm mb-4">
               {errorMessage ?? getErrorMessage(new Error("Failed to load deals"))}
@@ -387,12 +492,12 @@ export default function CustomerDealsPage() {
         {showList && (
           <div className="space-y-4 mt-4">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              {filteredProducts.length} deal{filteredProducts.length !== 1 ? "s" : ""} available
+              {displayProducts.length} deal{displayProducts.length !== 1 ? "s" : ""} available
             </p>
-            {filteredProducts.map((product, index) => (
+            {displayProducts.map((product, index) => (
               <DealProductCard
                 key={product.id}
-                {...buildDealProductCardProps(product, index, playingId, handleTogglePlay, handleReserve)}
+                {...buildDealProductCardProps(product, index, playingId, handleTogglePlay, handleReserve, lat, lng)}
                 isFavorite={favorites.has(product.id)}
                 isFollowing={following.has(product.shop_id)}
                 onToggleFavorite={handleToggleFavorite}
@@ -402,6 +507,170 @@ export default function CustomerDealsPage() {
           </div>
         )}
       </main>
+
+      {/* Order Options Modal */}
+      {selectedProductForOrder && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-md w-full shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <h2 className="text-lg font-black text-gray-900 dark:text-white">Order Options</h2>
+              <button
+                type="button"
+                onClick={() => setSelectedProductForOrder(null)}
+                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition text-gray-400"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmOrder} className="p-6 space-y-6">
+              {/* Product preview */}
+              <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={selectedProductForOrder.front_image_url}
+                  className="w-12 h-12 rounded-xl object-cover border"
+                  alt=""
+                />
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-bold text-gray-900 dark:text-white text-xs truncate">
+                    {selectedProductForOrder.name}
+                  </h4>
+                  <p className="text-[10px] text-gray-500 mt-0.5">
+                    {selectedProductForOrder.shop?.name}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                    ₹{(selectedProductForOrder.current_price || selectedProductForOrder.discount_price).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Delivery / Pickup options */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setOrderType("PICKUP")}
+                  className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all ${
+                    orderType === "PICKUP"
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                      : "border-gray-100 dark:border-gray-800 text-gray-500 hover:border-gray-200 dark:hover:border-gray-700"
+                  }`}
+                >
+                  <ShoppingBag size={18} />
+                  <span className="text-xs font-bold">Store Pickup</span>
+                  <span className="text-[10px] opacity-75">Free</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderType("DELIVERY")}
+                  className={`p-3 rounded-2xl border-2 flex flex-col items-center gap-1.5 transition-all ${
+                    orderType === "DELIVERY"
+                      ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                      : "border-gray-100 dark:border-gray-800 text-gray-500 hover:border-gray-200 dark:hover:border-gray-700"
+                  }`}
+                >
+                  <Truck size={18} />
+                  <span className="text-xs font-bold">Home Delivery</span>
+                  <span className="text-[10px] opacity-75">+ ₹45.00</span>
+                </button>
+              </div>
+
+              {/* Delivery fields */}
+              {orderType === "DELIVERY" ? (
+                <div className="space-y-3.5 animate-in slide-in-from-top-3 duration-250">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                      Customer Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={deliveryName}
+                      onChange={(e) => setDeliveryName(e.target.value)}
+                      placeholder="Jane Doe"
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 outline-none text-xs text-gray-900 dark:text-white placeholder:text-gray-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                      Phone Number
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="tel"
+                        required
+                        value={deliveryPhone}
+                        onChange={(e) => setDeliveryPhone(e.target.value)}
+                        placeholder="e.g. 9876543210"
+                        className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl pl-9 pr-3 py-2 outline-none text-xs text-gray-900 dark:text-white placeholder:text-gray-505 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                      />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                        <Phone size={12} />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                      Delivery Address
+                    </label>
+                    <textarea
+                      required
+                      rows={2}
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      placeholder="Street, building, apartment number..."
+                      className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 outline-none text-xs text-gray-900 dark:text-white placeholder:text-gray-500 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-none"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800 rounded-2xl flex items-start gap-2.5 text-xs text-blue-800 dark:text-blue-300">
+                  <MapPin size={16} className="text-blue-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    Pickup coordinates are locked. Please collect your items at: <br />
+                    <strong className="block mt-1 text-blue-900 dark:text-blue-200">
+                      {selectedProductForOrder.shop?.name} - {selectedProductForOrder.shop?.address}
+                    </strong>
+                  </div>
+                </div>
+              )}
+
+              {/* Order total */}
+              <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-800 pt-4 text-sm">
+                <span className="font-bold text-gray-500">Total Price</span>
+                <span className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                  ₹
+                  {(
+                    (selectedProductForOrder.current_price || selectedProductForOrder.discount_price) +
+                    (orderType === "DELIVERY" ? 45.0 : 0.0)
+                  ).toFixed(2)}
+                </span>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedProductForOrder(null)}
+                  className="flex-1 py-3 rounded-xl border font-bold text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition text-center"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPlacingOrder}
+                  className="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition disabled:opacity-75 flex items-center justify-center gap-1.5"
+                >
+                  {isPlacingOrder && <Loader2 size={12} className="animate-spin" />}
+                  {orderType === "DELIVERY" ? "Request Delivery" : "Confirm Reservation"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </div>

@@ -61,19 +61,19 @@ export default function ProfilePage() {
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-emerald-600 text-white rounded-2xl p-4 shadow-lg shadow-emerald-500/20 flex flex-col items-center justify-center text-center">
               <Coins size={24} className="mb-2 opacity-80" />
-              <span className="text-xl font-black">₹{(user as any).total_money_saved?.toFixed(0) || "0"}</span>
+              <span className="text-xl font-black">₹{user.total_money_saved?.toFixed(0) || "0"}</span>
               <span className="text-[10px] font-medium opacity-80 uppercase tracking-wide">Saved</span>
             </div>
             
             <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center text-center">
               <PackageCheck size={24} className="mb-2 text-blue-500" />
-              <span className="text-xl font-black text-gray-900 dark:text-white">{(user as any).total_items_saved || "0"}</span>
+              <span className="text-xl font-black text-gray-900 dark:text-white">{user.total_items_saved || "0"}</span>
               <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Rescued</span>
             </div>
             
             <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-4 shadow-sm flex flex-col items-center justify-center text-center">
               <Leaf size={24} className="mb-2 text-emerald-500" />
-              <span className="text-xl font-black text-gray-900 dark:text-white">{(user as any).co2_saved_kg?.toFixed(1) || "0"}</span>
+              <span className="text-xl font-black text-gray-900 dark:text-white">{user.co2_saved_kg?.toFixed(1) || "0"}</span>
               <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">kg CO2</span>
             </div>
           </div>

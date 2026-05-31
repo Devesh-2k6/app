@@ -32,6 +32,30 @@ export async function getProducts(params: GetProductsParams = {}): Promise<ApiPr
   return apiRequest<ApiProduct[]>(path);
 }
 
+export type ApiProductOptimizeRequest = {
+  name: string;
+  mfg_date: string;
+  expiry_date: string;
+  original_price: number;
+  quantity: number;
+};
+
+export type ApiProductOptimizeResponse = {
+  suggested_description: string;
+  suggested_discount_tier: string;
+  suggested_discount_percent: number;
+  confidence_score: number;
+};
+
+export async function optimizeProductDetails(
+  payload: ApiProductOptimizeRequest
+): Promise<ApiProductOptimizeResponse> {
+  return apiRequest<ApiProductOptimizeResponse>("/products/optimize", {
+    method: "POST",
+    json: payload,
+  });
+}
+
 export async function createProduct(product: ApiProductCreate): Promise<ApiProduct> {
   return apiRequest<ApiProduct>("/products/", {
     method: "POST",
@@ -84,3 +108,32 @@ export async function removeFavorite(productId: string): Promise<void> {
 export async function getFavorites(): Promise<ApiFavorite[]> {
   return apiRequest<ApiFavorite[]>("/favorites/me");
 }
+
+export async function getRecommendedProducts(): Promise<ApiProduct[]> {
+  return apiRequest<ApiProduct[]>("/products/recommended");
+}
+
+export async function getProductForecast(productId: string): Promise<{
+  rescue_probability: number;
+  sellout_hours: number;
+  optimal_discount_percent: number;
+  optimal_price: number;
+  model_confidence: number;
+}> {
+  return apiRequest<any>(`/products/${productId}/forecast`);
+}
+
+export async function scanProductDates(file: File): Promise<{
+  manufacturing_date: string | null;
+  expiry_date: string | null;
+  confidence_score: number;
+  detected_text: string;
+}> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiRequest<any>("/products/scan-dates", {
+    method: "POST",
+    body: formData,
+  });
+}
+

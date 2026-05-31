@@ -70,6 +70,7 @@ export default function AdminDashboard() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-lg overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src="https://images.unsplash.com/photo-1589367920969-abce79c58b50?w=100&q=80" alt="Item" className="w-full h-full object-cover" />
                       </div>
                       <span className="font-medium text-gray-900 dark:text-white text-sm">Suspicious Bread Listing</span>

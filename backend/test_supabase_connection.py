@@ -2,7 +2,7 @@ import httpx
 import time
 import os
 
-API_URL = "http://127.0.0.1:8001"
+API_URL = "http://127.0.0.1:8000"
 
 def run_tests():
     print("Testing Health Endpoint...")
@@ -25,7 +25,7 @@ def run_tests():
         }
         res = httpx.post(f"{API_URL}/auth/register", json=register_data)
         print("Register Response:", res.status_code, res.text)
-        if res.status_code != 200:
+        if res.status_code not in (200, 201):
             return False
         token = res.json()["access_token"]
     except Exception as e:
@@ -44,7 +44,7 @@ def run_tests():
         }
         res = httpx.post(f"{API_URL}/shops/", json=shop_data, headers=headers)
         print("Shop Response:", res.status_code, res.text)
-        if res.status_code != 200:
+        if res.status_code not in (200, 201):
             return False
     except Exception as e:
         print("Failed to create shop:", e)

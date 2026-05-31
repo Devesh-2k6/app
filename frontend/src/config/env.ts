@@ -14,5 +14,5 @@ function stripTrailingSlash(url: string): string {
 export function getPublicApiBaseUrl(): string {
   const raw = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (raw) return stripTrailingSlash(raw);
-  return process.env.NEXT_PUBLIC_API_URL || "";
+  return "http://localhost:8000";
 }

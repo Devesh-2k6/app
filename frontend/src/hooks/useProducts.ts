@@ -2,7 +2,7 @@
 
 import useSWR from "swr";
 import { getErrorMessage } from "@/api/errors";
-import { getProducts } from "@/services/products";
+import { getProducts, type GetProductsParams } from "@/services/products";
 import type { ApiProduct, ProductCategory } from "@/types/product";
 
 export type ProductsLoadStatus = "loading" | "success" | "empty" | "error";
@@ -23,12 +23,15 @@ export function useProducts(options?: {
   lat?: number;
   lng?: number;
   radius_km?: number;
+  refreshInterval?: number;
 }): UseProductsResult {
   // SWR automatically serializes objects into keys and passes them to the fetcher
   const key = options ? { ...options, _key: "products" } : { _key: "products" };
-  const fetcher = (params: any) => getProducts(params);
+  const fetcher = (params: GetProductsParams) => getProducts(params);
 
-  const { data, error, isLoading, mutate } = useSWR(key, fetcher);
+  const { data, error, isLoading, mutate } = useSWR(key, fetcher, {
+    refreshInterval: options?.refreshInterval ?? 5000,
+  });
 
   let status: ProductsLoadStatus = "success";
   if (isLoading && !data) status = "loading";

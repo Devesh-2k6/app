@@ -25,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen bg-gray-50 dark:bg-gray-900`} suppressHydrationWarning>
+      <body className={`${inter.className} min-h-screen bg-[#F4FBF7] text-slate-900`} suppressHydrationWarning>
         <HydrationZapper />
         <AuthenticationProvider>{children}</AuthenticationProvider>
       </body>
