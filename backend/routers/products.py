@@ -15,6 +15,7 @@ from services.email import send_email_notification
 from services.ai import optimize_product_details, scan_date_label_vision, parse_semantic_search, get_recipe_ingredients
 from services.ml import recommend_deals_for_user, generate_forecast_and_price_recommendation
 from routers.shops import _get_owner_shop, _serialize_shop
+from websocket_manager import manager
 
 logger = logging.getLogger(__name__)
 
@@ -455,7 +456,7 @@ async def optimize_product(
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_product(
+async def create_product(
     product_in: schemas.ProductCreate,
     user: Annotated[User, Depends(get_current_shop_owner)],
     db: Annotated[Session, Depends(get_db)],
@@ -536,7 +537,16 @@ def create_product(
     if followers:
         db.commit()
 
-    return _serialize_product(product, shop)
+    serialized = _serialize_product(product, shop)
+    
+    # Broadcast the new deal to all connected clients!
+    import asyncio
+    asyncio.create_task(manager.broadcast({
+        "type": "new_deal",
+        "product": serialized
+    }))
+
+    return serialized
 
 
 @router.put("/{product_id}")

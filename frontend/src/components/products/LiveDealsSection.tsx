@@ -6,6 +6,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { getProducts } from "@/services/products";
 import type { ApiProduct } from "@/types/product";
 import { DealProductCard } from "./DealProductCard";
+import { buildDealProductCardProps } from "@/lib/products/map-deal-product";
 import { useConfetti } from "@/hooks/useConfetti";
 import { useSound } from "@/hooks/useSound";
 import { createReservation } from "@/services/reservations";
@@ -108,37 +109,21 @@ export default function LiveDealsSection() {
           viewport={{ once: true, margin: "-50px" }}
           className="grid grid-cols-1 md:grid-cols-2 gap-6"
         >
-          {products.map((product, i) => {
-            const originalPrice = product.original_price;
-            const currentPrice = product.current_price ?? product.discount_price;
-            const discountPercent = Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
-            
-            const isExpired = new Date(product.expiry_date) < new Date();
-            
-            return (
-              <DealProductCard
-                key={product.id}
-                index={i}
-                id={product.id}
-                name={product.name}
-                imageUrl={product.front_image_url || "https://via.placeholder.com/150"}
-                originalPrice={originalPrice}
-                discountPrice={product.discount_price}
-                currentPrice={currentPrice}
-                isDynamicPricing={product.auto_discount_enabled}
-                isSurpriseBag={product.is_surprise_bag}
-                discountPercent={discountPercent}
-                expiryLabel={new Date(product.expiry_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                expiryIsExpired={isExpired}
-                shopSubtitle={product.shop?.name || "Local Shop"}
-                quantity={product.quantity}
-                hasVoiceNote={!!product.voice_note_url}
-                playingId={null}
-                onTogglePlay={() => {}}
-                onReserve={(id) => handleReserve(id, undefined)}
-              />
-            );
-          })}
+          {products.map((product, i) => (
+            <DealProductCard
+              key={product.id}
+              {...buildDealProductCardProps(
+                product,
+                i,
+                null,
+                () => {},
+                (id) => handleReserve(id, undefined),
+                undefined,
+                undefined
+              )}
+              onReserve={(id) => handleReserve(id, undefined)}
+            />
+          ))}
         </motion.div>
       )}
     </section>

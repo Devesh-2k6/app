@@ -1,7 +1,8 @@
 import time
 import json
 import logging
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from websocket_manager import manager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
@@ -86,6 +87,16 @@ async def log_requests(request: Request, call_next):
 
 # Register centralized error handlers
 register_error_handlers(app)
+
+# Real-time WebSocket notifications endpoint
+@app.websocket("/ws/notifications")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
 
 # Include all subrouters
 app.include_router(health.router)
