@@ -339,9 +339,9 @@ export default function CustomerDealsPage() {
   const initial = user?.name ? user.name[0].toUpperCase() : "?";
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-24">
+    <div className="min-h-screen bg-[#F4FBF7] pb-24">
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 bg-white/90 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 pt-4 pb-3">
+      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-3xl border-b border-emerald-100/50 px-4 pt-4 pb-3">
         <div className="max-w-2xl mx-auto">
           {/* Top row: brand + user */}
           <div className="flex items-center justify-between mb-3">
@@ -440,28 +440,28 @@ export default function CustomerDealsPage() {
           </div>
 
           {/* Search bar + Filter button row */}
-          <div className="flex gap-2">
+          <div className="bg-[#E2F0E7] p-1.5 rounded-full flex gap-1 items-center border border-emerald-100 shadow-[0_4px_20px_rgba(16,185,129,0.06)]">
             <div className="relative flex-1">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-800/80" />
               <input
                 id="deals-search"
                 type="search"
-                placeholder="Search deals…"
+                placeholder="Search near-expiry deals…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
+                className="w-full pl-10 pr-4 py-2.5 rounded-full bg-white text-sm text-slate-800 placeholder:text-slate-400 border border-emerald-100/50 outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all font-semibold"
               />
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-150 flex-shrink-0 ${
+              className={`flex items-center gap-1.5 text-xs font-extrabold px-5 py-2.5 rounded-full transition-all duration-300 cursor-pointer ${
                 showFilters || isDeepSearchActive
-                  ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/30"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  ? "bg-[#15803D] text-white shadow-md shadow-emerald-500/20"
+                  : "bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-100"
               }`}
             >
               <SlidersHorizontal size={14} />
-              Filter
+              <span>Filter</span>
             </button>
           </div>
 

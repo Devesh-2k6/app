@@ -109,7 +109,7 @@ export const DealProductCard = React.memo(function DealProductCardBase({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -4 }}
-      className={`glass-card rounded-3xl ${
+      className={`glass-card rounded-[2.25rem] shadow-[0_8px_30px_rgba(16,185,129,0.03)] border transition-all duration-300 hover:shadow-[0_20px_40px_rgba(16,185,129,0.07)] ${
         isSurpriseBag
           ? "border-purple-200 shadow-purple-500/20"
           : freshness.level === "urgent" || freshness.level === "near-expiry"
@@ -125,7 +125,7 @@ export const DealProductCard = React.memo(function DealProductCardBase({
             animate={{ opacity: 1, scale: 1, x: 0 }}
             exit={{ opacity: 0, scale: 0.7 }}
             transition={{ type: "spring", stiffness: 400, damping: 20, delay: index * 0.05 + 0.15 }}
-            className={`absolute top-3 left-3 z-10 flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${urgencyBadge.color} ${urgencyBadge.bgColor} backdrop-blur-md shadow-sm border border-emerald-500/10 ${
+            className={`absolute top-3 left-3 z-10 flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-extrabold ${urgencyBadge.color} ${urgencyBadge.bgColor} backdrop-blur-md shadow-sm border border-emerald-500/10 ${
               urgencyBadge.pulse ? "animate-urgency-pulse" : ""
             }`}
           >
@@ -140,7 +140,7 @@ export const DealProductCard = React.memo(function DealProductCardBase({
 
       <div className="flex gap-4 flex-1 min-w-0">
         {/* ── Image ── */}
-        <div className="w-24 h-24 rounded-xl overflow-hidden flex-shrink-0 border border-emerald-100/40 relative">
+        <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0 border border-emerald-100/40 relative">
           <Image 
             src={imgSrc} 
             alt={name} 

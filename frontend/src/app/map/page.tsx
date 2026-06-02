@@ -114,27 +114,27 @@ export default function MapDiscovery() {
   };
 
   return (
-    <div className="h-screen w-full relative overflow-hidden bg-[#111111] text-white">
+    <div className="h-screen w-full relative overflow-hidden bg-[#F4FBF7] text-slate-800">
       <div className="absolute top-0 inset-x-0 z-[400] p-4 pt-safe flex items-center gap-3 pointer-events-none">
         <Link
           href="/deals"
-          className="bg-[#1A1A1A]/90 backdrop-blur-md p-3 rounded-full shadow-lg border border-white/5 transition hover:scale-105 pointer-events-auto text-white hover:border-white/10"
+          className="bg-white/80 backdrop-blur-md p-3 rounded-full shadow-lg border border-emerald-100/40 transition hover:scale-105 pointer-events-auto text-slate-700 hover:text-emerald-700"
         >
           <ArrowLeft size={20} />
         </Link>
-        <div className="flex-1 bg-[#1A1A1A]/90 backdrop-blur-md rounded-full shadow-lg border border-white/5 flex items-center px-4 py-3 pointer-events-auto focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50 transition-all">
-          <Search size={18} className="text-gray-500 mr-2" />
+        <div className="flex-1 bg-white/85 backdrop-blur-md rounded-full shadow-lg border border-emerald-100/40 flex items-center px-4 py-3 pointer-events-auto focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50 transition-all">
+          <Search size={18} className="text-slate-400 mr-2" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search shops..."
-            className="w-full bg-transparent outline-none text-sm font-semibold text-white placeholder-gray-500"
+            className="w-full bg-transparent outline-none text-sm font-semibold text-slate-800 placeholder-slate-400"
           />
         </div>
         <button
           type="button"
-          className="bg-[#1A1A1A]/90 backdrop-blur-md p-3 rounded-full shadow-lg border border-white/5 transition hover:scale-105 pointer-events-auto text-white hover:border-white/10"
+          className="bg-white/80 backdrop-blur-md p-3 rounded-full shadow-lg border border-emerald-100/40 transition hover:scale-105 pointer-events-auto text-slate-700 hover:text-emerald-750"
           aria-label="Filters"
         >
           <Filter size={20} />
@@ -143,11 +143,11 @@ export default function MapDiscovery() {
 
       <div className="absolute inset-0 z-0">
         {status === "loading" ? (
-          <div className="w-full h-full flex items-center justify-center bg-[#111111]">
-            <Loader2 className="animate-spin text-emerald-500" size={36} />
+          <div className="w-full h-full flex items-center justify-center bg-[#F4FBF7]">
+            <Loader2 className="animate-spin text-emerald-555" size={36} />
           </div>
         ) : status === "error" ? (
-          <div className="w-full h-full flex items-center justify-center px-6 text-center text-red-400 text-sm font-bold bg-[#111111]">
+          <div className="w-full h-full flex items-center justify-center px-6 text-center text-red-600 text-sm font-bold bg-[#F4FBF7]">
             {errorMessage}
           </div>
         ) : (
@@ -168,7 +168,7 @@ export default function MapDiscovery() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40 z-[450]"
+              className="absolute inset-0 bg-black/30 z-[450]"
               onClick={() => setSelectedShop(null)}
             />
             <motion.div
@@ -176,19 +176,19 @@ export default function MapDiscovery() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="absolute bottom-0 inset-x-0 z-[500] bg-[#161616]/95 backdrop-blur-3xl rounded-t-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.8)] border-t border-white/5 p-6 pb-safe max-h-[55vh] overflow-y-auto"
+              className="absolute bottom-0 inset-x-0 z-[500] bg-white/95 backdrop-blur-3xl rounded-t-[2.5rem] shadow-[0_-15px_40px_rgba(16,185,129,0.08)] border-t border-emerald-100/50 p-6 pb-safe max-h-[55vh] overflow-y-auto"
             >
-              <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-6" />
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h2 className="text-2xl font-black tracking-tight text-white">
+                  <h2 className="text-2xl font-black tracking-tight text-slate-900">
                     {selectedShop.name}
                   </h2>
-                  <p className="text-gray-400 mt-1 text-sm font-medium">
+                  <p className="text-slate-500 mt-1 text-sm font-medium">
                     {selectedShop.address}
                   </p>
                 </div>
-                <div className="bg-red-500/10 text-red-400 border border-red-500/20 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider">
+                <div className="bg-red-50 text-red-600 border border-red-100 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider">
                   {selectedShop.deals.length || selectedShop.deal_count || 0} Deals
                 </div>
               </div>
@@ -196,9 +196,9 @@ export default function MapDiscovery() {
                 {selectedShop.deals.slice(0, 8).map((p) => (
                   <div
                     key={p.id}
-                    className="min-w-[140px] bg-[#242424] rounded-2xl p-3 border border-white/5 flex-shrink-0"
+                    className="min-w-[140px] bg-[#F4FBF7] rounded-2xl p-3 border border-emerald-100/40 flex-shrink-0"
                   >
-                    <div className="h-20 w-full bg-[#1A1A1A] rounded-xl mb-3 overflow-hidden relative border border-white/5">
+                    <div className="h-20 w-full bg-white rounded-xl mb-3 overflow-hidden relative border border-emerald-100/40">
                       <Image
                         src={getSafeImageUrl(p.front_image_url)}
                         alt={p.name}
@@ -207,26 +207,26 @@ export default function MapDiscovery() {
                         className="object-cover"
                       />
                     </div>
-                    <h4 className="text-xs font-bold text-white mb-1.5 line-clamp-1">
+                    <h4 className="text-xs font-bold text-slate-800 mb-1.5 line-clamp-1">
                       {p.name}
                     </h4>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-black text-emerald-400">
+                      <span className="text-sm font-black text-emerald-700">
                         ₹{p.discount_price.toFixed(2)}
                       </span>
-                      <span className="text-[10px] text-gray-500 line-through">
+                      <span className="text-[10px] text-slate-400 line-through">
                         ₹{p.original_price.toFixed(2)}
                       </span>
                     </div>
                   </div>
                 ))}
                 {selectedShop.deals.length === 0 && (
-                  <p className="text-sm text-gray-500 py-4 font-medium pl-6">No active deals at this shop.</p>
+                  <p className="text-sm text-slate-400 py-4 font-medium pl-6">No active deals at this shop.</p>
                 )}
               </div>
               <Link
                 href="/deals"
-                className="block w-full mt-4 bg-emerald-500 hover:bg-emerald-400 text-[#111111] font-black py-4 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] transition-all duration-300 text-center"
+                className="block w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-4 rounded-xl shadow-[0_4px_15px_rgba(16,185,129,0.2)] hover:shadow-[0_4px_25px_rgba(16,185,129,0.3)] transition-all duration-300 text-center"
               >
                 Browse all deals
               </Link>
