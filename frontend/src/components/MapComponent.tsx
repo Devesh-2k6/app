@@ -24,7 +24,7 @@ const customIcon = new L.DivIcon({
         height: 100%;
         width: 100%;
         border-radius: 50%;
-        background-color: #34d399;
+        background-color: #E5A84D;
         opacity: 0.5;
         animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
       "></span>
@@ -34,7 +34,7 @@ const customIcon = new L.DivIcon({
         border-radius: 50%;
         height: 16px;
         width: 16px;
-        background-color: #10b981;
+        background-color: #D66B1F;
         border: 2px solid white;
         box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
       "></span>
@@ -102,7 +102,7 @@ export default function MapComponent({
         attributionControl={false}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
           attribution='&copy; OpenStreetMap contributors &copy; CARTO'
         />
         {points.map((m) => (

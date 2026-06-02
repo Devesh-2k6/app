@@ -82,8 +82,14 @@ export default function MapDiscovery() {
   }, [shops, search]);
 
   const mapCenter = useMemo((): [number, number] => {
+    const CHENNAI_CENTER: [number, number] = [13.0827, 80.2707];
     if (userLat !== null && userLng !== null) {
-      return [userLat, userLng];
+      // If user is within ~1.0 degrees lat/lng of Chennai, use user location
+      const distLat = Math.abs(userLat - CHENNAI_CENTER[0]);
+      const distLng = Math.abs(userLng - CHENNAI_CENTER[1]);
+      if (distLat < 1.0 && distLng < 1.0) {
+        return [userLat, userLng];
+      }
     }
     if (filteredShops.length > 0) {
       const lat =
@@ -92,7 +98,7 @@ export default function MapDiscovery() {
         filteredShops.reduce((sum, s) => sum + s.longitude, 0) / filteredShops.length;
       return [lat, lng];
     }
-    return FALLBACK_CENTER;
+    return CHENNAI_CENTER;
   }, [filteredShops, userLat, userLng]);
 
   const mapMarkers: MapMarker[] = useMemo(

@@ -3,22 +3,46 @@
 @custom-variant dark (&:not(*));
 
 @theme {
-  --color-primary: #15803D; /* Emerald 700 - rich deep emerald green */
-  --color-primary-light: #22C55E; /* Emerald 500 */
-  --color-secondary: #D97706; /* Amber 600 */
+  --color-primary: #D66B1F; /* Terracotta orange */
+  --color-primary-light: #C25C14; /* Darker terracotta */
+  --color-secondary: #E39B14; /* Golden orange */
   --color-danger: #DC2626; /* Red 600 */
-  --color-background: #F4FBF7; /* Off-white with dynamic emerald hint */
-  --color-surface: #FFFFFF; /* Pure white for premium cards */
-  --color-text-primary: #0F172A; /* Slate 900 */
-  --color-text-secondary: #475569; /* Slate 600 */
+  --color-background: #FAF5E7; /* Warm honey cream */
+  --color-surface: #FFFDF9; /* Pure warm off-white */
+  --color-text-primary: #3C2314; /* Dark coffee brown */
+  --color-text-secondary: #7A6659; /* Muted brown-gray */
+
+  --color-emerald-50: #FCF8EC;
+  --color-emerald-100: #F9F2D8;
+  --color-emerald-200: #F3E4B0;
+  --color-emerald-300: #ECC77D;
+  --color-emerald-400: #E5A84D;
+  --color-emerald-500: #D66B1F;
+  --color-emerald-600: #C25C14;
+  --color-emerald-700: #9E450B;
+  --color-emerald-800: #7A3105;
+  --color-emerald-900: #551D01;
+  --color-emerald-950: #300C00;
+
+  --color-green-50: #FCF8EC;
+  --color-green-100: #F9F2D8;
+  --color-green-200: #F3E4B0;
+  --color-green-300: #ECC77D;
+  --color-green-400: #E5A84D;
+  --color-green-500: #D66B1F;
+  --color-green-600: #C25C14;
+  --color-green-700: #9E450B;
+  --color-green-800: #7A3105;
+  --color-green-900: #551D01;
+  --color-green-950: #300C00;
 
   --font-sans: "Outfit", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 @layer base {
   :root {
-    --background: #F4FBF7;
-    --foreground: #0F172A;
+    --background: #FAF5E7;
+    --foreground: #3C2314;
   }
 
   body {
@@ -33,15 +57,15 @@
 
 @layer utilities {
   .glass {
-    background-color: rgba(255, 255, 255, 0.7);
+    background-color: rgba(255, 253, 249, 0.7);
     backdrop-filter: blur(24px);
-    border: 1px solid rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(214, 107, 31, 0.1);
   }
   
   .glass-card {
-    background-color: #FFFFFF;
-    border: 1px solid rgba(16, 185, 129, 0.1);
-    box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.06);
+    background-color: #FFFDF9;
+    border: 1px solid rgba(214, 107, 31, 0.1);
+    box-shadow: 0 10px 30px -10px rgba(214, 107, 31, 0.06);
     transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -53,11 +77,11 @@
 @keyframes pulseGlow {
   0%, 100% {
     opacity: 1;
-    box-shadow: 0 0 10px 0px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 0 10px 0px rgba(214, 107, 31, 0.3);
   }
   50% {
     opacity: 0.8;
-    box-shadow: 0 0 20px 5px rgba(16, 185, 129, 0.15);
+    box-shadow: 0 0 20px 5px rgba(214, 107, 31, 0.15);
   }
 }
 
