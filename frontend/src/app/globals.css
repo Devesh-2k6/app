@@ -168,5 +168,51 @@
   .animate-price-drop {
     animation: priceDropBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
+
+  .animate-draw-checkmark {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: drawCheckmark 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
+  }
+
+  .shimmer-bg {
+    background: linear-gradient(
+      90deg,
+      rgba(229, 231, 235, 0.6) 25%,
+      rgba(243, 244, 246, 0.9) 50%,
+      rgba(229, 231, 235, 0.6) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmerGlow 1.8s infinite linear;
+  }
+
+  .dark .shimmer-bg,
+  .shimmer-bg[class*="dark:"] {
+    background: linear-gradient(
+      90deg,
+      rgba(55, 65, 81, 0.6) 25%,
+      rgba(75, 85, 99, 0.9) 50%,
+      rgba(55, 65, 81, 0.6) 75%
+    );
+    background-size: 200% 100%;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
 }
+
+@keyframes drawCheckmark {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 

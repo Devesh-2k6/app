@@ -18,7 +18,7 @@ def send_email_notification(to_email: str, subject: str, html_content: str, text
     
     if use_mock:
         print("\n" + "="*60)
-        print("📧 [MOCK EMAIL OUTBOUND]")
+        print("[MOCK EMAIL OUTBOUND]")
         print(f"To:      {to_email}")
         print(f"Sender:  {SMTP_SENDER}")
         print(f"Subject: {subject}")
@@ -55,13 +55,13 @@ def send_email_notification(to_email: str, subject: str, html_content: str, text
                 server.login(SMTP_USER, SMTP_PASSWORD)
                 server.sendmail(SMTP_SENDER, to_email, message.as_string())
                 
-        print(f"✅ Email successfully sent to {to_email} via SMTP.")
+        print(f"[SUCCESS] Email successfully sent to {to_email} via SMTP.")
         return True
     except Exception as e:
-        print(f"❌ Failed to send email to {to_email} via SMTP: {e}")
+        print(f"[ERROR] Failed to send email to {to_email} via SMTP: {e}")
         # Log mock as safety fallback so execution doesn't block/crash
         print("\n" + "="*60)
-        print("📧 [FALLBACK MOCK EMAIL OUTBOUND]")
+        print("[FALLBACK MOCK EMAIL OUTBOUND]")
         print(f"To:      {to_email}")
         print(f"Subject: {subject}")
         print("-"*60)

@@ -46,8 +46,9 @@ export default function AddProductPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const handleScanDates = async () => {
-    if (!expiryImageFile) {
+  const handleScanDates = async (fileToScan?: File) => {
+    const file = fileToScan || expiryImageFile;
+    if (!file) {
       alert("Please upload an expiry date image first.");
       return;
     }
@@ -55,7 +56,7 @@ export default function AddProductPage() {
     setScanMessage("");
     setError("");
     try {
-      const result = await scanProductDates(expiryImageFile);
+      const result = await scanProductDates(file);
       if (result.manufacturing_date) {
         setManufacturingDate(result.manufacturing_date);
       }
@@ -658,7 +659,18 @@ export default function AddProductPage() {
                   ref={expiryImageInputRef}
                   type="file"
                   accept="image/*"
-                  onChange={(e) => handleImageUpload(e, setExpiryImage, setExpiryImageFile)}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setExpiryImageFile(file);
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setExpiryImage(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                      handleScanDates(file);
+                    }
+                  }}
                   className="hidden"
                 />
               </div>

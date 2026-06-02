@@ -173,7 +173,10 @@ export default function MyReservations() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-gray-950 dark:text-white text-sm truncate">{item.product.name}</h3>
-                  <p className="text-[11px] text-gray-500 flex items-center gap-1 mt-1 font-medium"><MapPin size={11}/> {item.product.shop?.name}</p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] text-gray-500 font-medium">
+                    <span className="flex items-center gap-1"><MapPin size={11}/> {item.product.shop?.name}</span>
+                    <span className="flex items-center gap-1"><Clock size={11}/> {new Date(item.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  </div>
                   
                   <div className="flex justify-between items-end mt-3">
                     <span className="font-bold text-emerald-600 text-sm">
@@ -219,26 +222,28 @@ export default function MyReservations() {
                 </div>
               )}
 
-              {/* Order delivery/pickup details */}
+              {/* Order details */}
               {item.itemType === "order" && (
-                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400 space-y-1.5 bg-gray-50/50 dark:bg-gray-800/20 p-3 rounded-xl">
-                  {item.order_type === "DELIVERY" ? (
-                    <>
-                      <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                        <Truck size={12} className="text-purple-500" /> Delivery Details
-                      </div>
-                      <p><strong>Recipient:</strong> {item.customer_name} ({item.customer_phone})</p>
-                      <p><strong>Address:</strong> {item.delivery_address}</p>
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
-                        <ShoppingBag size={12} className="text-blue-500" /> Pickup Details
-                      </div>
-                      <p>Please pickup from: <strong>{item.product.shop?.name}</strong></p>
-                      <p><strong>Address:</strong> {item.product.shop?.address}</p>
-                    </>
-                  )}
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400 space-y-2 bg-gray-50/50 dark:bg-gray-800/20 p-3 rounded-xl">
+                  <div className="flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700/50 pb-1.5 mb-1.5">
+                    <span className="flex items-center gap-1">
+                      {item.order_type === "DELIVERY" ? <Truck size={12} className="text-purple-500" /> : <ShoppingBag size={12} className="text-blue-500" />}
+                      {item.order_type} ORDER DETAILS
+                    </span>
+                    <span>{new Date(item.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <p><strong>Customer Name:</strong> {item.customer_name || 'N/A'}</p>
+                    {item.customer_phone && <p><strong>Customer Phone:</strong> {item.customer_phone}</p>}
+                    {item.order_type === "DELIVERY" ? (
+                      <p><strong>Delivery Address:</strong> {item.delivery_address || 'N/A'}</p>
+                    ) : (
+                      <>
+                        <p><strong>Pickup Location:</strong> {item.product.shop?.name}</p>
+                        <p><strong>Pickup Address:</strong> {item.product.shop?.address || 'N/A'}</p>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
 

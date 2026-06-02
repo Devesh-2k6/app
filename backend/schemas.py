@@ -91,6 +91,7 @@ class ProductBase(BaseModel):
     is_surprise_bag: bool = False
     auto_discount_enabled: bool = False
     auto_discount_min_price: Optional[float] = None
+    discount_price: Optional[float] = None
 
     @field_validator('front_image_url', 'expiry_image_url')
     @classmethod

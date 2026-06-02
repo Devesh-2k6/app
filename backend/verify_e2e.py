@@ -25,7 +25,7 @@ def run_e2e_verification():
         "is_shop_owner": True
     })
     
-    if register_res.status_code != 200:
+    if register_res.status_code not in [200, 201]:
         print(f"❌ Shopkeeper registration failed: {register_res.text}")
         sys.exit(1)
     
@@ -57,7 +57,7 @@ def run_e2e_verification():
         "longitude": 77.2090,
         "description": "Premium surplus and fresh goods store"
     })
-    if shop_res.status_code != 200:
+    if shop_res.status_code not in [200, 201]:
         print(f"❌ Shop setup failed: {shop_res.text}")
         sys.exit(1)
         
@@ -86,7 +86,7 @@ def run_e2e_verification():
     }
     
     product_res = requests.post(f"{BASE_URL}/products/", headers=headers, json=product_payload)
-    if product_res.status_code != 200:
+    if product_res.status_code not in [200, 201]:
         print(f"❌ Product upload failed: {product_res.text}")
         sys.exit(1)
         

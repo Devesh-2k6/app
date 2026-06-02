@@ -9,6 +9,7 @@ from auth_service import get_current_shop_owner
 from db.models import User, Product, Shop, Reservation, ReservationStatus, Order, Review
 from db.session import get_db
 from routers.shops import _get_owner_shop
+from services.ml import generate_forecast_and_price_recommendation
 
 router = APIRouter(prefix="/shops/me", tags=["Analytics"])
 
@@ -88,6 +89,75 @@ def get_shop_analytics(
         orders_received=orders_received,
         revenue_summary=total_revenue
     )
+
+
+@router.get("/analytics/ai-inventory")
+def get_shop_ai_inventory(
+    user: Annotated[User, Depends(get_current_shop_owner)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    shop = _get_owner_shop(user, db)
+    
+    # Active products
+    now = datetime.now()
+    active_products = db.query(Product).filter(
+        Product.shop_id == shop.id,
+        Product.quantity > 0,
+        Product.expiry_date > now,
+        Product.is_active == True
+    ).all()
+    
+    total_probability = 0.0
+    risk_counts = {"Low": 0, "Medium": 0, "High": 0}
+    predicted_sellout_24h = 0
+    
+    for prod in active_products:
+        forecast = generate_forecast_and_price_recommendation(db, prod)
+        total_probability += forecast["rescue_probability"]
+        risk_counts[forecast["spoilage_risk_score"]] += 1
+        if forecast["sellout_hours"] <= 24.0:
+            predicted_sellout_24h += 1
+            
+    average_prob = round(total_probability / len(active_products), 1) if active_products else 100.0
+    
+    # Recovered revenue and rescued items
+    completed_orders_revenue = db.query(func.sum(Order.total_price)).filter(
+        Order.shop_id == shop.id,
+        Order.status == "DELIVERED"
+    ).scalar() or 0.0
+    
+    completed_reservations_revenue = db.query(func.sum(Reservation.total_price)).filter(
+        Reservation.shop_id == shop.id,
+        Reservation.status == ReservationStatus.COMPLETED
+    ).scalar() or 0.0
+    
+    total_revenue = completed_orders_revenue + completed_reservations_revenue
+    
+    completed_orders_items = db.query(func.sum(Order.quantity)).filter(
+        Order.shop_id == shop.id,
+        Order.status == "DELIVERED"
+    ).scalar() or 0
+    
+    completed_reservations_items = db.query(func.sum(Reservation.quantity)).filter(
+        Reservation.shop_id == shop.id,
+        Reservation.status == ReservationStatus.COMPLETED
+    ).scalar() or 0
+    
+    total_items_saved = completed_orders_items + completed_reservations_items
+    
+    # Footprint calculations
+    co2_saved = round(total_items_saved * 2.5, 1)
+    water_saved = round(total_items_saved * 150.0, 1)
+    
+    return {
+        "average_rescue_probability": average_prob,
+        "risk_counts": risk_counts,
+        "total_recovered_revenue": total_revenue,
+        "co2_saved_kg": co2_saved,
+        "water_saved_liters": water_saved,
+        "items_rescued": total_items_saved,
+        "predicted_sellout_within_24h": predicted_sellout_24h
+    }
 
 
 @router.get("/ml-diagnostics")

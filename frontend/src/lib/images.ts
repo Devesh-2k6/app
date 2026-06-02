@@ -3,31 +3,34 @@
  * If the hostname is not configured, it returns a fallback placeholder URL.
  */
 export function getSafeImageUrl(url: string | null | undefined): string {
-  if (!url) return "https://placehold.co/300x300?text=No+Image";
+  const inlineSvg = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 24 24" fill="none" stroke="%2310b981" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="background-color:%23f4fbf7"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 8h.01"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`;
+
+  if (!url) return inlineSvg;
+
+  let safeUrl = url;
+  if (url.includes("via.placeholder.com")) {
+    safeUrl = url.replace("via.placeholder.com", "placehold.co");
+  }
 
   try {
-    // If it's a valid absolute URL, check the hostname
-    const parsed = new URL(url);
+    const parsed = new URL(safeUrl);
     const hostname = parsed.hostname.toLowerCase();
 
     const isAllowed =
       hostname === "images.unsplash.com" ||
       hostname === "placehold.co" ||
-      hostname === "via.placeholder.com" ||
       hostname === "example.com" ||
       hostname === "supabase.co" ||
       hostname.endsWith(".supabase.co");
 
     if (isAllowed) {
-      return url;
+      return safeUrl;
     }
   } catch {
-    // If it's a relative path or local import path, it is safe
-    if (url.startsWith("/") || url.startsWith("data:")) {
-      return url;
+    if (safeUrl.startsWith("/") || safeUrl.startsWith("data:")) {
+      return safeUrl;
     }
   }
 
-  // Fallback to a configured domain (placehold.co is allowed in next.config.ts)
-  return `https://placehold.co/300x300?text=${encodeURIComponent("Invalid Host")}`;
+  return inlineSvg;
 }

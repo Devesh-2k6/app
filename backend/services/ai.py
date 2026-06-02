@@ -199,3 +199,188 @@ async def scan_date_label_vision(file_bytes: bytes) -> dict:
         "confidence_score": 0.60,
         "detected_text": "Heuristic fallback due to connection error"
     }
+
+async def parse_semantic_search(q: str) -> dict:
+    """
+    Parses a natural language query using the Gemini API to extract search parameters,
+    falling back to local heuristics if the API key is not configured or calls fail.
+    """
+    default_res = {
+        "keywords": [q],
+        "categories": [],
+        "max_price": None,
+        "min_discount_pct": None,
+        "expiry_urgency": None
+    }
+    
+    if not q:
+        return default_res
+        
+    if GEMINI_API_KEY:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+            prompt = (
+                f"You are an expert NLP search engine for 'ExpiryGo', a near-expiry food rescue app.\n"
+                f"Analyze the user's natural language search query and extract structured query parameters:\n"
+                f"Query: '{q}'\n\n"
+                f"The available product categories are strictly: BAKERY, DAIRY, PRODUCE, MEAT, PANTRY, PREPARED_FOOD, OTHER.\n"
+                f"For the 'expiry_urgency' field, use 'today' (under 24h), 'tomorrow' (under 48h), or 'week' (under 7 days).\n\n"
+                f"Return ONLY a raw JSON object matching this structure (no markdown wrapper, no other text):\n"
+                f"{{\n"
+                f'  "keywords": ["list", "of", "noun", "keywords", "to", "search", "like", "bread", "chicken"],\n'
+                f'  "categories": ["list of matching Category strings if explicitly matched or implied, empty if not"],\n'
+                f'  "max_price": null or float number budget limit,\n'
+                f'  "min_discount_pct": null or float percentage (e.g. 50.0 for 50% off),\n'
+                f'  "expiry_urgency": null or "today" or "tomorrow" or "week"\n'
+                f"}}"
+            )
+            
+            headers = {"Content-Type": "application/json"}
+            payload = {
+                "contents": [{
+                    "parts": [{"text": prompt}]
+                }]
+            }
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(url, headers=headers, json=payload, timeout=8.0)
+                if response.status_code == 200:
+                    res_data = response.json()
+                    text_out = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    
+                    if text_out.startswith("```"):
+                        lines = text_out.splitlines()
+                        text_out = "\n".join(lines[1:-1]) if lines[-1].startswith("```") else "\n".join(lines[1:])
+                        
+                    parsed = json.loads(text_out)
+                    return {
+                        "keywords": parsed.get("keywords") or [q],
+                        "categories": parsed.get("categories") or [],
+                        "max_price": parsed.get("max_price"),
+                        "min_discount_pct": parsed.get("min_discount_pct"),
+                        "expiry_urgency": parsed.get("expiry_urgency")
+                    }
+        except Exception as e:
+            print(f"⚠️ Gemini semantic search parse failed: {e}")
+            
+    # Local heuristics fallback
+    q_lower = q.lower()
+    keywords = [w.strip() for w in q_lower.split() if len(w.strip()) > 2]
+    if not keywords:
+        keywords = [q_lower]
+        
+    categories = []
+    if any(w in q_lower for w in ["bread", "cake", "cookie", "pastry", "bakery", "croissant"]):
+        categories.append("BAKERY")
+    if any(w in q_lower for w in ["milk", "cheese", "butter", "paneer", "yogurt", "dairy"]):
+        categories.append("DAIRY")
+    if any(w in q_lower for w in ["apple", "banana", "fruit", "salad", "vegetable", "tomato", "produce"]):
+        categories.append("PRODUCE")
+    if any(w in q_lower for w in ["chicken", "meat", "beef", "pork", "egg", "fish"]):
+        categories.append("MEAT")
+    if any(w in q_lower for w in ["rice", "pasta", "flour", "oil", "sauce", "pantry"]):
+        categories.append("PANTRY")
+    if any(w in q_lower for w in ["prepared", "ready", "meal", "cooked", "breakfast", "dinner", "lunch"]):
+        categories.append("PREPARED_FOOD")
+        
+    # Extract max price (e.g. "under 150", "below 200", "budget 100")
+    max_price = None
+    import re
+    price_match = re.search(r'(?:under|below|budget|less than|rs|inr|₹)\s*(\d+)', q_lower)
+    if price_match:
+        max_price = float(price_match.group(1))
+        
+    # Extract discount (e.g. "50% off", "30 percent discount")
+    min_discount_pct = None
+    discount_match = re.search(r'(\d+)\s*(?:%|percent)\s*(?:off|discount)?', q_lower)
+    if discount_match:
+        min_discount_pct = float(discount_match.group(1))
+        
+    expiry_urgency = None
+    if any(w in q_lower for w in ["today", "tonight", "urgent", "now"]):
+        expiry_urgency = "today"
+    elif any(w in q_lower for w in ["tomorrow", "next day"]):
+        expiry_urgency = "tomorrow"
+    elif any(w in q_lower for w in ["week", "few days"]):
+        expiry_urgency = "week"
+        
+    return {
+        "keywords": keywords,
+        "categories": categories,
+        "max_price": max_price,
+        "min_discount_pct": min_discount_pct,
+        "expiry_urgency": expiry_urgency
+    }
+
+async def get_recipe_ingredients(recipe_name: str) -> dict:
+    """
+    Retrieves required ingredients for a dish using Gemini,
+    falling back to local recipe configurations if key is not configured or calls fail.
+    """
+    default_res = {
+        "recipe_name": recipe_name,
+        "ingredients": [recipe_name]
+    }
+    
+    if not recipe_name:
+        return default_res
+        
+    if GEMINI_API_KEY:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+            prompt = (
+                f"Identify the standard primary cooking ingredients needed for this recipe/dish: '{recipe_name}'\n"
+                f"Return ONLY a raw JSON object matching this structure (no markdown wrapper, no other text):\n"
+                f"{{\n"
+                f'  "recipe_name": "Formatted Recipe Name",\n'
+                f'  "ingredients": ["ingredient1", "ingredient2", "ingredient3", "ingredient4"]\n'
+                f"}}"
+            )
+            
+            headers = {"Content-Type": "application/json"}
+            payload = {
+                "contents": [{
+                    "parts": [{"text": prompt}]
+                }]
+            }
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(url, headers=headers, json=payload, timeout=8.0)
+                if response.status_code == 200:
+                    res_data = response.json()
+                    text_out = res_data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    
+                    if text_out.startswith("```"):
+                        lines = text_out.splitlines()
+                        text_out = "\n".join(lines[1:-1]) if lines[-1].startswith("```") else "\n".join(lines[1:])
+                        
+                    parsed = json.loads(text_out)
+                    return {
+                        "recipe_name": parsed.get("recipe_name") or recipe_name,
+                        "ingredients": parsed.get("ingredients") or [recipe_name]
+                    }
+        except Exception as e:
+            print(f"⚠️ Gemini recipe ingredients failed: {e}")
+            
+    # Local recipe mappings
+    recipe_map = {
+        "pasta": ["pasta", "tomato", "sauce", "garlic", "cheese"],
+        "pizza": ["cheese", "bread", "tomato", "sauce", "onion", "bell pepper"],
+        "salad": ["salad", "tomato", "cucumber", "onion", "apple", "banana", "fruit", "lettuce"],
+        "cake": ["cake", "egg", "flour", "sugar", "butter", "milk"],
+        "sandwich": ["bread", "cheese", "tomato", "butter"],
+        "curry": ["paneer", "chicken", "onion", "tomato", "oil", "cream"]
+    }
+    
+    r_lower = recipe_name.lower()
+    for key, ingredients in recipe_map.items():
+        if key in r_lower:
+            return {
+                "recipe_name": recipe_name.title(),
+                "ingredients": ingredients
+            }
+            
+    return {
+        "recipe_name": recipe_name.title(),
+        "ingredients": [w.strip() for w in r_lower.split() if len(w.strip()) > 2]
+    }

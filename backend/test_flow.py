@@ -30,7 +30,7 @@ def test_auth():
         "name": "Test Customer",
         "is_shop_owner": False
     })
-    assert resp.status_code == 200, f"Register failed: {resp.text}"
+    assert resp.status_code in (200, 201), f"Register failed: {resp.text}"
     data = resp.json()
     customer_token = data["access_token"]
     print(f"    ✅ Registered, token: {customer_token[:20]}...")
@@ -149,7 +149,7 @@ if __name__ == "__main__":
             "name": "Test Shop Owner",
             "is_shop_owner": True
         })
-        if resp.status_code != 200:
+        if resp.status_code not in (200, 201):
             print(f"    ❌ Register failed: {resp.status_code}")
             print(f"    Response: {resp.text}")
             raise Exception(f"Shop owner registration failed: {resp.text}")

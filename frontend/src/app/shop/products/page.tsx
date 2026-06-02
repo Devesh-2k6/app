@@ -5,7 +5,7 @@ import { Search, Filter, CheckCircle2, XCircle, Loader2, Clock, Trash2, Package,
 import Link from "next/link";
 import { useProducts } from "@/hooks/useProducts";
 import { formatExpiryDisplay } from "@/lib/products/formatters";
-import { deleteProduct, updateProduct, getProductForecast } from "@/services/products";
+import { deleteProduct, updateProduct, getProductAiInsight } from "@/services/products";
 import { getMyShop } from "@/services/shops";
 
 export default function ProductList() {
@@ -22,7 +22,8 @@ export default function ProductList() {
     setLoadingForecast(true);
     setForecastData(null);
     try {
-      const data = await getProductForecast(product.id);
+      const data = await getProductAiInsight(product.id);
+
       setForecastData(data);
     } catch {
       alert("Failed to load forecasting metrics.");
@@ -39,7 +40,7 @@ export default function ProductList() {
   }, []);
 
   const { products, status, refetch } = useProducts({
-    shopId,
+    shopId: shopId || "pending_shop_load",
     hideExpired: activeTab === "active",
   });
 
@@ -286,7 +287,7 @@ export default function ProductList() {
 
             <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 font-bold text-sm mb-4">
               <Sparkles size={18} />
-              AI Sales Forecast & Optimizer
+              AI Demand Forecasting & Optimizer
             </div>
 
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
@@ -304,42 +305,62 @@ export default function ProductList() {
             ) : forecastData ? (
               <div className="space-y-6">
                 {/* Visual Rescue Probability Gauge */}
-                <div className="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-800/50">
-                  <div className="relative flex items-center justify-center w-28 h-28">
-                    {/* Ring background */}
+                <div className="flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-800/30 rounded-2xl border border-gray-100 dark:border-gray-850">
+                  <div className="relative flex items-center justify-center w-32 h-32">
+                    {/* Background subtle glow */}
+                    <div className="absolute w-20 h-20 bg-emerald-500/5 rounded-full filter blur-xl animate-pulse" />
+                    
+                    {/* Ring SVG */}
                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                      <defs>
+                        <linearGradient id="modal-prob-grad-green" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#10b981" />
+                          <stop offset="100%" stopColor="#059669" />
+                        </linearGradient>
+                        <linearGradient id="modal-prob-grad-amber" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#f59e0b" />
+                          <stop offset="100%" stopColor="#d97706" />
+                        </linearGradient>
+                        <linearGradient id="modal-prob-grad-red" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#ef4444" />
+                          <stop offset="100%" stopColor="#dc2626" />
+                        </linearGradient>
+                        <filter id="modal-ring-glow" x="-10%" y="-10%" width="120%" height="120%">
+                          <feGaussianBlur stdDeviation="2.5" result="blur" />
+                          <feMerge>
+                            <feMergeNode in="blur" />
+                            <feMergeNode in="SourceGraphic" />
+                          </feMerge>
+                        </filter>
+                      </defs>
                       <circle
                         cx="50"
                         cy="50"
                         r="40"
                         stroke="currentColor"
-                        strokeWidth="8"
+                        strokeWidth="5"
                         fill="transparent"
-                        className="text-gray-200 dark:text-gray-800"
+                        className="text-gray-100 dark:text-gray-800"
                       />
                       <circle
                         cx="50"
                         cy="50"
                         r="40"
-                        stroke="currentColor"
-                        strokeWidth="8"
+                        stroke={`url(#${forecastData.rescue_probability >= 75 ? "modal-prob-grad-green" : forecastData.rescue_probability >= 40 ? "modal-prob-grad-amber" : "modal-prob-grad-red"})`}
+                        strokeWidth="6"
                         fill="transparent"
                         strokeDasharray={251.2}
                         strokeDashoffset={251.2 - (251.2 * forecastData.rescue_probability) / 100}
-                        className={`transition-all duration-1000 ${
-                          forecastData.rescue_probability >= 75
-                            ? "text-emerald-500"
-                            : forecastData.rescue_probability >= 40
-                            ? "text-amber-500"
-                            : "text-red-500"
-                        }`}
+                        strokeLinecap="round"
+                        filter="url(#modal-ring-glow)"
+                        className="transition-all duration-1000 ease-out"
                       />
                     </svg>
                     <div className="absolute flex flex-col items-center">
-                      <span className="text-2xl font-black text-gray-900 dark:text-white">
+                      <span className="text-2xl font-black text-gray-905 dark:text-white tracking-tight">
                         {forecastData.rescue_probability}%
                       </span>
-                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Rescue Prob.</span>
+                      <span className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Rescue Prob.</span>
                     </div>
                   </div>
                 </div>

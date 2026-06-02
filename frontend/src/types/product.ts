@@ -39,7 +39,10 @@ export type ApiProduct = {
   shop: ApiShopSummary | null;
 };
 
-export type ApiProductCreate = Omit<ApiProduct, "id" | "created_at" | "shop" | "is_active" | "shop_id" | "current_price" | "discount_price">;
+export type ApiProductCreate = Omit<ApiProduct, "id" | "created_at" | "shop" | "is_active" | "shop_id" | "current_price" | "discount_price"> & {
+  is_active?: boolean;
+  discount_price?: number | null;
+};
 
 export type ReservationStatus = "PENDING" | "COMPLETED" | "CANCELLED";
 export type PaymentStatus = "UNPAID" | "PAID" | "REFUNDED";

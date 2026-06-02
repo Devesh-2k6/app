@@ -247,13 +247,18 @@ export default function ShopReservations() {
                       </div>
                     </div>
 
-                    {order.order_type === "DELIVERY" && (
-                      <div className="p-3 bg-gray-50 dark:bg-gray-900/60 rounded-2xl border border-gray-100 dark:border-gray-800 text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                        <div className="font-bold text-[10px] text-gray-400 uppercase tracking-wider mb-1">Recipient & Delivery Address</div>
-                        <p><strong>Customer:</strong> {order.customer_name} ({order.customer_phone})</p>
-                        <p><strong>Address:</strong> {order.delivery_address}</p>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-900/60 rounded-2xl border border-gray-100 dark:border-gray-800 text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                      <div className="flex justify-between font-bold text-[10px] text-gray-400 uppercase tracking-wider mb-1.5 border-b border-gray-150 dark:border-gray-700/50 pb-1">
+                        <span>Customer & Order Details</span>
+                        <span>Ordered on {new Date(order.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
-                    )}
+                      <p><strong>Customer:</strong> {order.customer_name || 'N/A'} {order.customer_phone ? `(${order.customer_phone})` : ''}</p>
+                      {order.order_type === "DELIVERY" ? (
+                        <p><strong>Delivery Address:</strong> {order.delivery_address || 'N/A'}</p>
+                      ) : (
+                        <p><strong>Type:</strong> Self Pickup at Shop</p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -319,12 +324,18 @@ export default function ShopReservations() {
                       </div>
                     </div>
 
-                    {order.order_type === "DELIVERY" && (
-                      <div className="p-3 bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 rounded-2xl text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                        <p><strong>Customer:</strong> {order.customer_name} ({order.customer_phone})</p>
-                        <p><strong>Address:</strong> {order.delivery_address}</p>
+                    <div className="p-3 bg-gray-50 dark:bg-gray-900/60 border border-gray-100 dark:border-gray-800 rounded-2xl text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                      <div className="flex justify-between font-bold text-[10px] text-gray-400 uppercase tracking-wider mb-1.5 border-b border-gray-150 dark:border-gray-700/50 pb-1">
+                        <span>Customer & Order Details</span>
+                        <span>Ordered on {new Date(order.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
-                    )}
+                      <p><strong>Customer:</strong> {order.customer_name || 'N/A'} {order.customer_phone ? `(${order.customer_phone})` : ''}</p>
+                      {order.order_type === "DELIVERY" ? (
+                        <p><strong>Delivery Address:</strong> {order.delivery_address || 'N/A'}</p>
+                      ) : (
+                        <p><strong>Type:</strong> Self Pickup at Shop</p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -341,14 +352,40 @@ export default function ShopReservations() {
             ) : (
               <div className="grid gap-3">
                 {pastOrders.slice(0, 10).map(order => (
-                  <div key={order.id} className="bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 rounded-2xl p-4 flex justify-between items-center opacity-70">
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-gray-800 dark:text-gray-200 text-xs truncate">{order.product.name} (x{order.quantity})</h3>
-                      <p className="text-[10px] text-gray-500 mt-0.5">Type: {order.order_type} | Value: ₹{order.total_price.toFixed(2)}</p>
+                  <div key={order.id} className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-3xl p-5 shadow-sm space-y-4 opacity-90">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex gap-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={order.product.front_image_url} alt="" className="w-12 h-12 rounded-2xl object-cover bg-gray-50 border" />
+                        <div>
+                          <h3 className="font-bold text-gray-800 dark:text-gray-200 text-xs truncate">{order.product.name}</h3>
+                          <div className="flex gap-2 items-center mt-1">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${order.status === 'DELIVERED' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400'}`}>
+                              {order.status}
+                            </span>
+                            <span className="text-[10px] text-gray-400">Qty: {order.quantity} | ₹{order.total_price.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <span className={`inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full text-white ${order.order_type === 'DELIVERY' ? 'bg-purple-600' : 'bg-blue-600'}`}>
+                        {order.order_type === 'DELIVERY' ? <Truck size={10} /> : <ShoppingBag size={10} />}
+                        {order.order_type}
+                      </span>
                     </div>
-                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${order.status === 'DELIVERED' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                      {order.status}
-                    </span>
+
+                    <div className="p-3 bg-gray-50/50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 rounded-2xl text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                      <div className="flex justify-between font-bold text-[10px] text-gray-400 uppercase tracking-wider mb-1.5 border-b border-gray-150 dark:border-gray-700/50 pb-1">
+                        <span>Customer & Order Details</span>
+                        <span>Ordered on {new Date(order.created_at).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <p><strong>Customer:</strong> {order.customer_name || 'N/A'} {order.customer_phone ? `(${order.customer_phone})` : ''}</p>
+                      {order.order_type === "DELIVERY" ? (
+                        <p><strong>Delivery Address:</strong> {order.delivery_address || 'N/A'}</p>
+                      ) : (
+                        <p><strong>Type:</strong> Self Pickup at Shop</p>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

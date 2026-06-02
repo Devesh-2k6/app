@@ -39,27 +39,27 @@ def seed_database():
                 "email": "shop1@test.com",
                 "password": "password123",
                 "owner_name": "Rajesh Patel",
-                "address": "123 Main Street, Downtown",
-                "latitude": 40.7128,
-                "longitude": -74.0060,
+                "address": "123 Anna Salai, Downtown Chennai",
+                "latitude": 13.0827,
+                "longitude": 80.2707,
             },
             {
                 "name": "Fresh Mart Express",
                 "email": "shop2@test.com",
                 "password": "password123",
                 "owner_name": "Priya Sharma",
-                "address": "456 Oak Avenue, Midtown",
-                "latitude": 40.7580,
-                "longitude": -73.9855,
+                "address": "456 Usman Road, T. Nagar, Chennai",
+                "latitude": 13.0406,
+                "longitude": 80.2443,
             },
             {
                 "name": "Daily Bazaar",
                 "email": "shop3@test.com",
                 "password": "password123",
                 "owner_name": "Amit Singh",
-                "address": "789 Elm Road, Uptown",
-                "latitude": 40.7489,
-                "longitude": -73.9680,
+                "address": "789 Nungambakkam High Road, Chennai",
+                "latitude": 13.0598,
+                "longitude": 80.2206,
             },
         ]
         
@@ -101,8 +101,9 @@ def seed_database():
                 "category": "DAIRY",
                 "original_price": 45.00,
                 "quantity": 20,
-                "days_left": 2,  # 60% discount
+                "days_left": 2,  # 70% discount
                 "mfg_date": -7,
+                "image": "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&q=80",
             },
             {
                 "shop_idx": 0,
@@ -110,8 +111,9 @@ def seed_database():
                 "category": "BAKERY",
                 "original_price": 35.00,
                 "quantity": 15,
-                "days_left": 1,  # 60% discount
+                "days_left": 1,  # 70% discount
                 "mfg_date": -3,
+                "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&q=80",
             },
             {
                 "shop_idx": 0,
@@ -119,8 +121,9 @@ def seed_database():
                 "category": "DAIRY",
                 "original_price": 50.00,
                 "quantity": 12,
-                "days_left": 4,  # 35% discount
+                "days_left": 4,  # 50% discount
                 "mfg_date": -8,
+                "image": "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&q=80",
             },
             # Shop 2 products
             {
@@ -129,8 +132,9 @@ def seed_database():
                 "category": "PRODUCE",
                 "original_price": 40.00,
                 "quantity": 30,
-                "days_left": 1,  # 60% discount
+                "days_left": 1,  # 70% discount
                 "mfg_date": -4,
+                "image": "https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400&q=80",
             },
             {
                 "shop_idx": 1,
@@ -138,8 +142,9 @@ def seed_database():
                 "category": "OTHER",
                 "original_price": 60.00,
                 "quantity": 8,
-                "days_left": 3,  # 35% discount
+                "days_left": 3,  # 50% discount
                 "mfg_date": -10,
+                "image": "https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=400&q=80",
             },
             {
                 "shop_idx": 1,
@@ -147,8 +152,9 @@ def seed_database():
                 "category": "DAIRY",
                 "original_price": 120.00,
                 "quantity": 5,
-                "days_left": 5,  # 20% discount
+                "days_left": 5,  # 50% discount
                 "mfg_date": -15,
+                "image": "https://images.unsplash.com/photo-1582208993730-98829d31ac09?w=400&q=80",
             },
             # Shop 3 products
             {
@@ -157,8 +163,9 @@ def seed_database():
                 "category": "BAKERY",
                 "original_price": 80.00,
                 "quantity": 10,
-                "days_left": 1,  # 60% discount (expires today or tomorrow)
+                "days_left": 1,  # 70% discount
                 "mfg_date": -2,
+                "image": "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&q=80",
             },
             {
                 "shop_idx": 2,
@@ -166,8 +173,9 @@ def seed_database():
                 "category": "PANTRY",
                 "original_price": 150.00,
                 "quantity": 6,
-                "days_left": 8,  # 10% discount
+                "days_left": 8,  # 30% discount
                 "mfg_date": -30,
+                "image": "https://images.unsplash.com/photo-1534604973900-c43ab4c2e0ab?w=400&q=80",
             },
             {
                 "shop_idx": 2,
@@ -175,8 +183,9 @@ def seed_database():
                 "category": "DAIRY",
                 "original_price": 110.00,
                 "quantity": 8,
-                "days_left": 6,  # 20% discount
+                "days_left": 6,  # 30% discount
                 "mfg_date": -20,
+                "image": "https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?w=400&q=80",
             },
         ]
         
@@ -213,8 +222,8 @@ def seed_database():
                 quantity=prod_info["quantity"],
                 manufacturing_date=manufacturing_date,
                 expiry_date=expiry_date,
-                front_image_url="https://via.placeholder.com/300x300?text=" + prod_info["name"].replace(" ", "+"),
-                expiry_image_url="https://via.placeholder.com/300x300?text=Expiry",
+                front_image_url=prod_info["image"],
+                expiry_image_url="https://images.unsplash.com/photo-1544816155-12df9643f363?w=400&q=80",
                 description=f"High quality, fresh {prod_info['name']}. Available in stock for a limited time.",
                 is_active=True,
             )

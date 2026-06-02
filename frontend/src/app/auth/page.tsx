@@ -155,7 +155,7 @@ export default function AuthPage() {
     }
   };
 
-  if (authLoading) {
+  if (authLoading || isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <Loader2 className="animate-spin text-emerald-500" size={36} />

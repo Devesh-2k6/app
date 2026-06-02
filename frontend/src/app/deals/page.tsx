@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import useSWR from "swr";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LogIn,
   MapPin,
@@ -20,7 +22,9 @@ import {
   Phone,
   ShoppingBag,
   Loader2,
+  Heart,
 } from "lucide-react";
+
 import { useAuth } from "@/contexts/AuthenticationContext";
 import { DealProductCard } from "@/components/products/DealProductCard";
 import { DealProductSkeleton } from "@/components/products/DealProductSkeleton";
@@ -28,24 +32,36 @@ import { getErrorMessage } from "@/api/errors";
 import { useProducts } from "@/hooks/useProducts";
 import { buildDealProductCardProps } from "@/lib/products/map-deal-product";
 import { createOrder } from "@/services/orders";
-import { addFavorite, removeFavorite, getFavorites, getRecommendedProducts } from "@/services/products";
+import { addFavorite, removeFavorite, getFavorites, getRecommendedProducts, getDeepSearchResults, type ApiRecipeSearchResponse } from "@/services/products";
 import { getMyFollowing, followShop, unfollowShop } from "@/services/shops";
 import { BottomNav } from "@/components/BottomNav";
 import type { ProductCategory, ApiProduct } from "@/types/product";
+import { fetchIpGeolocation } from "@/lib/geolocation";
 
-const FILTERS = ["All", "AI Recommended ✨", "BAKERY", "DAIRY", "PRODUCE", "MEAT", "PANTRY", "PREPARED_FOOD", "OTHER"];
+const FILTERS = ["All", "AI Recommended ✨", "Saved ❤️", "BAKERY", "DAIRY", "PRODUCE", "MEAT", "PANTRY", "PREPARED_FOOD", "OTHER"];
 
 export default function CustomerDealsPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [orderSuccessDetails, setOrderSuccessDetails] = useState<{ name: string; shopName: string; price: number; type: "PICKUP" | "DELIVERY" } | null>(null);
+
   const [activeFilter, setActiveFilter] = useState("All");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [lat, setLat] = useState<number | undefined>();
   const [lng, setLng] = useState<number | undefined>();
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [following, setFollowing] = useState<Set<string>>(new Set());
+
+  // Deep search states
+  const [showFilters, setShowFilters] = useState(false);
+  const [maxPrice, setMaxPrice] = useState<number | "">("");
+  const [minDiscount, setMinDiscount] = useState<number | "">("");
+  const [radiusKm, setRadiusKm] = useState<number>(50);
+  const [expiryUrgency, setExpiryUrgency] = useState<string>("any");
+  const [semanticSearch, setSemanticSearch] = useState(false);
+  const [recipeMode, setRecipeMode] = useState(false);
 
   // Order options modal states
   const [selectedProductForOrder, setSelectedProductForOrder] = useState<ApiProduct | null>(null);
@@ -74,7 +90,28 @@ export default function CustomerDealsPage() {
     }
   }, [user]);
 
-  const { products, status, errorMessage, refetch } = useProducts({ 
+  const isDeepSearchActive = semanticSearch || recipeMode || maxPrice !== "" || minDiscount !== "" || radiusKm !== 50 || expiryUrgency !== "any";
+
+  const deepSearchKey = isDeepSearchActive ? {
+    _key: "deepSearch",
+    q: search || undefined,
+    semantic: semanticSearch,
+    recipeMode: recipeMode,
+    maxPrice: maxPrice !== "" ? Number(maxPrice) : undefined,
+    minDiscountPct: minDiscount !== "" ? Number(minDiscount) : undefined,
+    expiryUrgency: expiryUrgency !== "any" ? expiryUrgency : undefined,
+    lat,
+    lng,
+    radiusKm: radiusKm
+  } : null;
+
+  const { data: deepSearchData, error: deepSearchError, isLoading: deepSearchLoading, mutate: mutateDeepSearch } = useSWR(
+    deepSearchKey,
+    (params) => getDeepSearchResults(params),
+    { refreshInterval: 5000 }
+  );
+
+  const { products: standardProducts, status: standardStatus, errorMessage: standardErrorMessage, refetch: refetchStandard } = useProducts({ 
     hideExpired: true,
     q: search || undefined,
     category: (activeFilter === "All" || activeFilter === "AI Recommended ✨") ? undefined : (activeFilter as ProductCategory),
@@ -111,13 +148,10 @@ export default function CustomerDealsPage() {
 
   // Auto IP Geolocation on mount
   useEffect(() => {
-    fetch("http://api.ipstack.com/check?access_key=f06e35bdacbd8a36738efbf3f020c125")
-      .then((res) => res.json())
+    fetchIpGeolocation()
       .then((data) => {
-        if (data && data.latitude && data.longitude) {
-          setLat(data.latitude);
-          setLng(data.longitude);
-        }
+        setLat(data.latitude);
+        setLng(data.longitude);
       })
       .catch((err) => console.error("Auto IP location failed:", err));
   }, []);
@@ -191,7 +225,7 @@ export default function CustomerDealsPage() {
       router.push("/auth?role=customer&tab=login");
       return;
     }
-    const found = products.find((p) => p.id === productId);
+    const found = (isDeepSearchActive && deepSearchData ? (deepSearchData.recipe_mode ? deepSearchData.matched_deals : deepSearchData.products) : standardProducts).find((p) => p.id === productId);
     if (found) {
       setSelectedProductForOrder(found);
       setOrderType("PICKUP");
@@ -223,13 +257,17 @@ export default function CustomerDealsPage() {
         customer_phone: orderType === "DELIVERY" ? deliveryPhone.trim() : undefined,
         delivery_address: orderType === "DELIVERY" ? deliveryAddress.trim() : undefined,
       });
-      alert(
-        orderType === "DELIVERY"
-          ? "Delivery request placed successfully! The shop will review it shortly."
-          : "Reservation placed successfully! View it in your reservations page."
-      );
+      setOrderSuccessDetails({
+        name: selectedProductForOrder.name,
+        shopName: selectedProductForOrder.shop?.name ?? "Local Shop",
+        price: (selectedProductForOrder.current_price || selectedProductForOrder.discount_price) + (orderType === "DELIVERY" ? 45.0 : 0.0),
+        type: orderType
+      });
       setSelectedProductForOrder(null);
-      void refetch();
+      void refetchStandard();
+      if (isDeepSearchActive) {
+        void mutateDeepSearch();
+      }
     } catch (err) {
       alert("Failed to place order: " + getErrorMessage(err));
     } finally {
@@ -246,37 +284,53 @@ export default function CustomerDealsPage() {
         },
         (err) => {
           console.warn("GPS failed, falling back to IP geolocation:", err);
-          fetch("http://api.ipstack.com/check?access_key=f06e35bdacbd8a36738efbf3f020c125")
-            .then(res => res.json())
+          fetchIpGeolocation()
             .then(data => {
-              if (data && data.latitude && data.longitude) {
-                setLat(data.latitude);
-                setLng(data.longitude);
-              } else {
-                alert("Could not get location. " + err.message);
-              }
+              setLat(data.latitude);
+              setLng(data.longitude);
             })
             .catch(() => alert("Could not get location. " + err.message));
         }
       );
     } else {
-      fetch("http://api.ipstack.com/check?access_key=f06e35bdacbd8a36738efbf3f020c125")
-        .then(res => res.json())
+      fetchIpGeolocation()
         .then(data => {
-          if (data && data.latitude && data.longitude) {
-            setLat(data.latitude);
-            setLng(data.longitude);
-          } else {
-            alert("Geolocation is not supported by your browser.");
-          }
+          setLat(data.latitude);
+          setLng(data.longitude);
         })
         .catch(() => alert("Geolocation is not supported by your browser."));
     }
   };
 
   const isAiRecommended = activeFilter === "AI Recommended ✨";
-  const displayProducts = isAiRecommended ? recommendedProducts : products;
-  const displayStatus = isAiRecommended ? (loadingRecommended ? "loading" : (recommendedProducts.length > 0 ? "success" : "empty")) : status;
+  const isSavedFilter = activeFilter === "Saved ❤️";
+  const isRecipeResult = isDeepSearchActive && deepSearchData?.recipe_mode === true;
+  const displayProducts = isAiRecommended
+    ? recommendedProducts
+    : isSavedFilter
+    ? (isDeepSearchActive && deepSearchData && !deepSearchData.recipe_mode ? deepSearchData.products : standardProducts).filter((p) => favorites.has(p.id))
+    : isDeepSearchActive && deepSearchData
+    ? (deepSearchData.recipe_mode ? deepSearchData.matched_deals : deepSearchData.products)
+    : standardProducts;
+
+  let displayStatus = "success";
+  let errorMessage: string | null = null;
+  
+  if (isAiRecommended) {
+    displayStatus = loadingRecommended ? "loading" : (recommendedProducts.length > 0 ? "success" : "empty");
+  } else if (isDeepSearchActive) {
+    if (deepSearchLoading && !deepSearchData) displayStatus = "loading";
+    else if (deepSearchError) {
+      displayStatus = "error";
+      errorMessage = getErrorMessage(deepSearchError);
+    } else if (deepSearchData) {
+      const itemsCount = deepSearchData.recipe_mode ? deepSearchData.matched_deals.length : deepSearchData.products.length;
+      displayStatus = itemsCount === 0 ? "empty" : "success";
+    }
+  } else {
+    displayStatus = standardStatus;
+    errorMessage = standardErrorMessage;
+  }
 
   const showList = displayStatus === "success" && displayProducts.length > 0;
   const showEmpty =
@@ -385,17 +439,30 @@ export default function CustomerDealsPage() {
             </div>
           </div>
 
-          {/* Search bar */}
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              id="deals-search"
-              type="search"
-              placeholder="Search deals…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
-            />
+          {/* Search bar + Filter button row */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                id="deals-search"
+                type="search"
+                placeholder="Search deals…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-emerald-500/50 transition"
+              />
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-xl transition-all duration-150 flex-shrink-0 ${
+                showFilters || isDeepSearchActive
+                  ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/30"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+              }`}
+            >
+              <SlidersHorizontal size={14} />
+              Filter
+            </button>
           </div>
 
           {/* Category filter pills */}
@@ -403,7 +470,13 @@ export default function CustomerDealsPage() {
             {FILTERS.map((f) => (
               <button
                 key={f}
-                onClick={() => setActiveFilter(f)}
+                onClick={() => {
+                  setActiveFilter(f);
+                  if (f === "AI Recommended ✨" || f === "Saved ❤️") {
+                    // Close advanced filters if using static special filters
+                    setShowFilters(false);
+                  }
+                }}
                 className={`flex-shrink-0 text-xs font-bold px-4 py-1.5 rounded-full transition-all duration-150 ${
                   activeFilter === f
                     ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/30"
@@ -413,11 +486,181 @@ export default function CustomerDealsPage() {
                 {f}
               </button>
             ))}
-            <button className="flex-shrink-0 flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
-              <SlidersHorizontal size={12} />
-              Filter
-            </button>
           </div>
+
+          {/* Advanced Collapsible Filter Drawer */}
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800/80 p-4 mt-3 space-y-4 shadow-inner">
+                  <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+                    <span className="text-xs font-black text-gray-900 dark:text-white uppercase tracking-wider">Deep Search Filters</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMaxPrice("");
+                        setMinDiscount("");
+                        setRadiusKm(50);
+                        setExpiryUrgency("any");
+                        setSemanticSearch(false);
+                        setRecipeMode(false);
+                      }}
+                      className="text-[10px] font-bold text-red-500 hover:text-red-400 transition"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                  
+                  {/* Grid for Sliders */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {/* Max Budget Slider */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                        Max Budget: {maxPrice !== "" ? `₹${maxPrice}` : "Any"}
+                      </label>
+                      <input
+                        type="range"
+                        min="50"
+                        max="1000"
+                        step="50"
+                        value={maxPrice === "" ? "1000" : String(maxPrice)}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setMaxPrice(val === 1000 ? "" : val);
+                        }}
+                        className="w-full accent-emerald-500 bg-gray-200 dark:bg-gray-700 h-1 rounded-lg cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[9px] text-gray-400 mt-1 font-bold">
+                        <span>₹50</span>
+                        <span>Any</span>
+                      </div>
+                    </div>
+
+                    {/* Min Discount Slider */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                        Min Discount: {minDiscount !== "" ? `${minDiscount}% Off` : "Any"}
+                      </label>
+                      <input
+                        type="range"
+                        min="10"
+                        max="90"
+                        step="10"
+                        value={minDiscount === "" ? "10" : String(minDiscount)}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setMinDiscount(val === 10 ? "" : val);
+                        }}
+                        className="w-full accent-emerald-500 bg-gray-200 dark:bg-gray-700 h-1 rounded-lg cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[9px] text-gray-400 mt-1 font-bold">
+                        <span>Any</span>
+                        <span>90%</span>
+                      </div>
+                    </div>
+
+                    {/* Radius Distance Slider */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                        Distance Radius: {radiusKm === 50 ? "Any (50km)" : `${radiusKm} km`}
+                      </label>
+                      <input
+                        type="range"
+                        min="5"
+                        max="100"
+                        step="5"
+                        value={radiusKm}
+                        onChange={(e) => setRadiusKm(Number(e.target.value))}
+                        className="w-full accent-emerald-500 bg-gray-200 dark:bg-gray-700 h-1 rounded-lg cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[9px] text-gray-400 mt-1 font-bold">
+                        <span>5 km</span>
+                        <span>100 km</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Urgency and AI features */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-gray-100 dark:border-gray-800">
+                    {/* Expiry Urgency Select */}
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">
+                        Expiry Urgency
+                      </label>
+                      <select
+                        value={expiryUrgency}
+                        onChange={(e) => setExpiryUrgency(e.target.value)}
+                        className="w-full text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-2.5 py-1.5 outline-none text-gray-900 dark:text-white"
+                      >
+                        <option value="any">Any Expiry</option>
+                        <option value="today">Expiring Today (&lt;24h)</option>
+                        <option value="tomorrow">Expiring Tomorrow (&lt;48h)</option>
+                        <option value="week">Expiring This Week</option>
+                      </select>
+                    </div>
+
+                    {/* AI Semantic Search Toggle */}
+                    <div className="flex items-center justify-between gap-3 pt-2 sm:pt-0">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                          AI Semantic Parsing
+                        </label>
+                        <span className="text-[9px] text-gray-400 leading-none">Understand query intent</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSemanticSearch(!semanticSearch);
+                          if (recipeMode) setRecipeMode(false);
+                        }}
+                        className={`w-10 h-6 rounded-full p-1 transition-colors duration-200 focus:outline-none flex-shrink-0 ${
+                          semanticSearch ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                        }`}
+                      >
+                        <div
+                          className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-200 ${
+                            semanticSearch ? "translate-x-4" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {/* AI Recipe Matcher Toggle */}
+                    <div className="flex items-center justify-between gap-3 pt-2 sm:pt-0">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+                          Recipe Ingredient Match
+                        </label>
+                        <span className="text-[9px] text-gray-400 leading-none">Assemble recipe bundles</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRecipeMode(!recipeMode);
+                          if (semanticSearch) setSemanticSearch(false);
+                        }}
+                        className={`w-10 h-6 rounded-full p-1 transition-colors duration-200 focus:outline-none flex-shrink-0 ${
+                          recipeMode ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-700"
+                        }`}
+                      >
+                        <div
+                          className={`w-4 h-4 rounded-full bg-white shadow-md transform transition-transform duration-200 ${
+                            recipeMode ? "translate-x-4" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </header>
 
@@ -445,6 +688,73 @@ export default function CustomerDealsPage() {
 
       {/* ── Main content ────────────────────────────────────────────── */}
       <main className="p-4 max-w-2xl mx-auto">
+        {/* AI Recipe Ingredient Matcher Card */}
+        {isRecipeResult && deepSearchData && (() => {
+          const recipeData = deepSearchData as ApiRecipeSearchResponse;
+          return (
+            <div className="mb-6 bg-white dark:bg-gray-900 border border-emerald-500/20 rounded-3xl p-5 shadow-xl relative overflow-hidden">
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+              
+              <div className="flex items-center gap-2 mb-3">
+                <div className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-1.5 rounded-xl">
+                  <ShoppingBag size={18} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-black text-gray-400 uppercase tracking-wider">Recipe Match Bundle</h3>
+                  <h2 className="text-base font-black text-gray-900 dark:text-white mt-0.5">
+                    {recipeData.recipe_name} Ingredients
+                  </h2>
+                </div>
+              </div>
+              
+              <div className="space-y-2 mt-4 text-xs">
+                <div className="flex flex-wrap gap-2">
+                  {recipeData.ingredients.map((ing: string, i: number) => {
+                    const isMatched = recipeData.matched_deals.some(
+                      (p: any) => p.name.toLowerCase().includes(ing.toLowerCase()) || 
+                                 (p.description && p.description.toLowerCase().includes(ing.toLowerCase()))
+                    );
+                    return (
+                      <span
+                        key={i}
+                        className={`px-3 py-1.5 rounded-full font-bold text-[10px] tracking-wide uppercase transition ${
+                          isMatched
+                            ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/25"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-400 border border-transparent"
+                        }`}
+                      >
+                        {isMatched ? "✅ " : "❌ "}
+                        {ing}
+                      </span>
+                    );
+                  })}
+                </div>
+                
+                {recipeData.missing_ingredients.length > 0 && (
+                  <p className="text-[10px] text-gray-400 italic mt-2 leading-relaxed">
+                    Missing nearby: <span className="font-bold text-gray-500">{recipeData.missing_ingredients.join(", ")}</span>
+                  </p>
+                )}
+                
+                <div className="border-t border-gray-100 dark:border-gray-800 mt-4 pt-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Estimated Cost</p>
+                    <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      ₹{recipeData.estimated_total_cost.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Total Savings</p>
+                    <span className="inline-block mt-0.5 text-xs font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-2.5 py-1 rounded-xl">
+                      Save ₹{recipeData.total_savings.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {displayStatus === "loading" && (
           <div className="space-y-4 mt-4">
             {[1, 2, 3, 4].map((i) => (
@@ -464,7 +774,12 @@ export default function CustomerDealsPage() {
             </p>
             <button
               type="button"
-              onClick={() => void refetch()}
+              onClick={() => {
+                void refetchStandard();
+                if (isDeepSearchActive) {
+                  void mutateDeepSearch();
+                }
+              }}
               className="inline-flex items-center gap-2 bg-emerald-600 text-white font-semibold px-4 py-2 rounded-xl"
             >
               <RefreshCw size={16} />
@@ -474,18 +789,42 @@ export default function CustomerDealsPage() {
         )}
 
         {showEmpty && (
-          <div className="py-16 text-center text-gray-500 dark:text-gray-400">
-            <Package size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <p className="font-semibold">No active deals yet.</p>
-            <p className="text-sm mt-1">Shops can add deals from the shopkeeper dashboard.</p>
-            <button
-              type="button"
-              onClick={() => void refetch()}
-              className="mt-4 inline-flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold text-sm bg-emerald-50 dark:bg-emerald-500/10 px-4 py-2 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition"
-            >
-              <RefreshCw size={14} />
-              Refresh
-            </button>
+          <div className="py-16 text-center text-gray-500 dark:text-gray-400 bg-white/50 dark:bg-gray-900/50 border border-emerald-100/30 dark:border-gray-800 rounded-3xl p-8 backdrop-blur-md shadow-sm">
+            {isSavedFilter ? (
+              <>
+                <Heart size={48} className="mx-auto text-red-500/80 dark:text-red-400 mb-4 fill-red-500/20" />
+                <p className="font-bold text-gray-900 dark:text-white text-base">No saved deals yet.</p>
+                <p className="text-sm mt-1 max-w-sm mx-auto text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Tap the ❤️ icon on any deal to save it here for quick access later.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilter("All")}
+                  className="mt-5 inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-md shadow-emerald-500/10 cursor-pointer"
+                >
+                  Explore Active Deals
+                </button>
+              </>
+            ) : (
+              <>
+                <Package size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+                <p className="font-semibold text-gray-900 dark:text-white">No active deals yet.</p>
+                <p className="text-sm mt-1">Shops can add deals from the shopkeeper dashboard.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void refetchStandard();
+                    if (isDeepSearchActive) {
+                      void mutateDeepSearch();
+                    }
+                  }}
+                  className="mt-4 inline-flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold text-sm bg-emerald-50 dark:bg-emerald-500/10 px-4 py-2 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition"
+                >
+                  <RefreshCw size={14} />
+                  Refresh
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -671,6 +1010,77 @@ export default function CustomerDealsPage() {
           </div>
         </div>
       )}
+
+      {/* Premium Order Success Modal */}
+      <AnimatePresence>
+        {orderSuccessDetails && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-white dark:bg-gray-900 rounded-3xl max-w-md w-full shadow-2xl border border-emerald-100/50 dark:border-gray-800 overflow-hidden p-6 text-center space-y-4"
+            >
+              {/* Animated checkmark circle */}
+              <div className="flex justify-center mt-2">
+                <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-500/10 rounded-full flex items-center justify-center border border-emerald-500/20">
+                  <svg className="w-10 h-10 text-emerald-600 dark:text-emerald-450" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3.5">
+                    <motion.path
+                      initial={{ pathLength: 0 }}
+                      animate={{ pathLength: 1 }}
+                      transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+                      className="animate-draw-checkmark"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <h3 className="text-xl font-black text-gray-950 dark:text-white">Order Confirmed!</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {orderSuccessDetails.type === "DELIVERY" 
+                    ? "Delivery request placed! The store will review it shortly."
+                    : "Reservation confirmed! Collect your items at the store."}
+                </p>
+              </div>
+
+              {/* Order specifications card */}
+              <div className="p-4 bg-emerald-500/[0.02] border border-emerald-100/40 dark:border-gray-800 rounded-2xl text-left text-xs space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Item Reserved</span>
+                  <span className="font-bold text-gray-900 dark:text-white text-right max-w-[200px] truncate">{orderSuccessDetails.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Store Location</span>
+                  <span className="font-bold text-gray-900 dark:text-white text-right max-w-[200px] truncate">{orderSuccessDetails.shopName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400 font-bold uppercase tracking-wider text-[9px]">Fulfillment</span>
+                  <span className="font-bold text-gray-900 dark:text-white">{orderSuccessDetails.type === "DELIVERY" ? "🚚 Home Delivery" : "🛍️ Store Pickup"}</span>
+                </div>
+                <div className="border-t border-emerald-100/20 dark:border-gray-800 my-1 pt-2 flex justify-between items-center text-sm font-black">
+                  <span className="text-slate-700 dark:text-gray-300">
+                    {orderSuccessDetails.type === "DELIVERY" ? "Total Paid" : "Pay at Store"}
+                  </span>
+                  <span className="text-emerald-600 dark:text-emerald-400">₹{orderSuccessDetails.price.toFixed(2)}</span>
+                </div>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setOrderSuccessDetails(null)}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-3.5 rounded-xl transition shadow-md shadow-emerald-500/10 cursor-pointer"
+              >
+                Back to Feed
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <BottomNav />
     </div>

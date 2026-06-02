@@ -420,31 +420,40 @@ export default function Home() {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-50px" }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
         >
-          <motion.div variants={staggerItem} className="bg-gradient-to-br from-[#EAFDF4] to-[#C9F2DC] rounded-[2.5rem] p-10 flex flex-col items-center text-center shadow-lg shadow-emerald-950/5 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+          <motion.div variants={staggerItem} className="bg-gradient-to-br from-[#EAFDF4] to-[#C9F2DC] rounded-[2.5rem] p-8 flex flex-col items-center text-center shadow-lg shadow-emerald-950/5 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
             <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/40 blur-3xl rounded-full group-hover:scale-150 transition-transform duration-700" />
             <div className="text-5xl md:text-6xl font-black text-[#0D6B42] mb-4 drop-shadow-sm flex items-end justify-center">
               <AnimatedCounter value={6.2} decimals={1} />
-              <span className="text-3xl ml-2 mb-1">tons</span>
+              <span className="text-2xl ml-1 mb-1">tons</span>
             </div>
-            <div className="text-[#15803D] font-bold text-lg max-w-[200px] leading-snug">food waste prevented this month</div>
+            <div className="text-[#15803D] font-bold text-base max-w-[200px] leading-snug">food waste prevented this month</div>
+          </motion.div>
+
+          <motion.div variants={staggerItem} className="bg-gradient-to-br from-[#E6FCF5] to-[#BFEFE0] rounded-[2.5rem] p-8 flex flex-col items-center text-center shadow-lg shadow-emerald-950/5 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+            <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/40 blur-3xl rounded-full group-hover:scale-150 transition-transform duration-700" />
+            <div className="text-5xl md:text-6xl font-black text-[#0D6B5A] mb-4 drop-shadow-sm flex items-end justify-center">
+              <AnimatedCounter value={15.5} decimals={1} />
+              <span className="text-2xl ml-1 mb-1">tons</span>
+            </div>
+            <div className="text-[#0F766E] font-bold text-base max-w-[200px] leading-snug">CO₂ emissions saved (2.5x ratio)</div>
           </motion.div>
           
-          <motion.div variants={staggerItem} className="bg-gradient-to-br from-[#FFF4E6] to-[#FFE2BF] rounded-[2.5rem] p-10 flex flex-col items-center text-center shadow-lg shadow-emerald-950/5 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+          <motion.div variants={staggerItem} className="bg-gradient-to-br from-[#FFF4E6] to-[#FFE2BF] rounded-[2.5rem] p-8 flex flex-col items-center text-center shadow-lg shadow-emerald-950/5 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
             <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/40 blur-3xl rounded-full group-hover:scale-150 transition-transform duration-700" />
             <div className="text-5xl md:text-6xl font-black text-[#9A621E] mb-4 drop-shadow-sm flex items-end justify-center">
               <AnimatedCounter value={18} prefix="₹" suffix="L+" />
             </div>
-            <div className="text-[#B45309] font-bold text-lg max-w-[200px] leading-snug">saved by shoppers in Chennai</div>
+            <div className="text-[#B45309] font-bold text-base max-w-[200px] leading-snug">saved by shoppers in Chennai</div>
           </motion.div>
           
-          <motion.div variants={staggerItem} className="bg-gradient-to-br from-[#F0F2FF] to-[#D5DAF9] rounded-[2.5rem] p-10 flex flex-col items-center text-center shadow-lg shadow-emerald-950/5 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+          <motion.div variants={staggerItem} className="bg-gradient-to-br from-[#F0F2FF] to-[#D5DAF9] rounded-[2.5rem] p-8 flex flex-col items-center text-center shadow-lg shadow-emerald-950/5 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
             <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/40 blur-3xl rounded-full group-hover:scale-150 transition-transform duration-700" />
             <div className="text-5xl md:text-6xl font-black text-[#4F46E5] mb-4 drop-shadow-sm flex items-end justify-center">
               <AnimatedCounter value={240} suffix="+" />
             </div>
-            <div className="text-[#4338CA] font-bold text-lg max-w-[200px] leading-snug">local shops onboarded on platform</div>
+            <div className="text-[#4338CA] font-bold text-base max-w-[200px] leading-snug">local shops onboarded on platform</div>
           </motion.div>
         </motion.div>
       </section>

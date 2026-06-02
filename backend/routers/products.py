@@ -12,7 +12,7 @@ from db.models import Product, Shop, User, Follower, Notification, ProductCatego
 from db.session import get_db
 from storage import upload_product_image
 from services.email import send_email_notification
-from services.ai import optimize_product_details, scan_date_label_vision
+from services.ai import optimize_product_details, scan_date_label_vision, parse_semantic_search, get_recipe_ingredients
 from services.ml import recommend_deals_for_user, generate_forecast_and_price_recommendation
 from routers.shops import _get_owner_shop, _serialize_shop
 
@@ -77,6 +77,7 @@ def _serialize_product(product: Product, shop: Optional[Shop] = None) -> dict:
         "discount_price": product.discount_price,
         "current_price": current_price,
         "quantity": product.quantity,
+        "manufacturing_date": product.manufacturing_date,
         "expiry_date": product.expiry_date,
         "category": product.category,
         "front_image_url": product.front_image_url,
@@ -128,27 +129,236 @@ def read_products(
     if q:
         query = query.filter(Product.name.ilike(f"%{q}%"))
         
+    bypass_geo = False
     if lat is not None and lng is not None:
         lat_delta = radius_km / 111.0
         lng_delta = radius_km / (111.0 * math.cos(math.radians(lat)))
-        query = query.filter(
+        geo_query = query.filter(
             Shop.latitude.between(lat - lat_delta, lat + lat_delta),
             Shop.longitude.between(lng - lng_delta, lng + lng_delta)
         )
+        if geo_query.count() > 0:
+            query = geo_query
+        else:
+            logger.info("No products found within range. Disabling geo-filter to show remote/mock deals for local testing.")
+            bypass_geo = True
 
     products = query.order_by(Product.expiry_date.asc()).all()
 
     out: list[dict] = []
+    products_with_distance = []
     for p in products:
         shop = p.shop
+        dist = None
         # geo filter
-        if lat is not None and lng is not None and shop:
+        if lat is not None and lng is not None and not bypass_geo and shop:
             dist = haversine_distance(lat, lng, shop.latitude, shop.longitude)
             if dist > radius_km:
                 continue
-            
+        products_with_distance.append((p, shop, dist))
+
+    if lat is not None and lng is not None and not bypass_geo:
+        # Sort by distance (closest first)
+        products_with_distance.sort(key=lambda item: item[2] if item[2] is not None else 999999)
+
+    for p, shop, dist in products_with_distance:
         out.append(_serialize_product(p, shop))
     return out
+
+
+@router.get("/search/deep")
+async def deep_search_products(
+    db: Annotated[Session, Depends(get_db)],
+    q: Optional[str] = None,
+    semantic: bool = False,
+    recipe_mode: bool = False,
+    max_price: Optional[float] = None,
+    min_discount_pct: Optional[float] = None,
+    expiry_urgency: Optional[str] = None,
+    lat: Optional[float] = None,
+    lng: Optional[float] = None,
+    radius_km: float = 10.0,
+):
+    def haversine_distance(lat1, lon1, lat2, lon2):
+        R = 6371.0 # Earth radius in km
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        return R * c
+
+    now = datetime.now(UTC).replace(tzinfo=None)
+
+    # 1. Recipe Mode
+    if recipe_mode and q:
+        recipe_data = await get_recipe_ingredients(q)
+        recipe_name = recipe_data.get("recipe_name", q)
+        ingredients = recipe_data.get("ingredients", [])
+        
+        # Get all products matching ingredients
+        query = db.query(Product).join(Product.shop).options(contains_eager(Product.shop)).filter(
+            Product.quantity > 0,
+            Product.expiry_date > now,
+            Product.is_active == True
+        )
+        
+        bypass_geo = False
+        if lat is not None and lng is not None:
+            lat_delta = radius_km / 111.0
+            lng_delta = radius_km / (111.0 * math.cos(math.radians(lat)))
+            geo_query = query.filter(
+                Shop.latitude.between(lat - lat_delta, lat + lat_delta),
+                Shop.longitude.between(lng - lng_delta, lng + lng_delta)
+            )
+            if geo_query.count() > 0:
+                query = geo_query
+            else:
+                bypass_geo = True
+                
+        products = query.order_by(Product.expiry_date.asc()).all()
+        
+        filtered_products = []
+        for p in products:
+            if lat is not None and lng is not None and not bypass_geo and p.shop:
+                dist = haversine_distance(lat, lng, p.shop.latitude, p.shop.longitude)
+                if dist > radius_km:
+                    continue
+            filtered_products.append(p)
+            
+        matched_deals = []
+        missing_ingredients = []
+        
+        for ing in ingredients:
+            ing_match = None
+            ing_lower = ing.lower()
+            for p in filtered_products:
+                if ing_lower in p.name.lower() or (p.description and ing_lower in p.description.lower()):
+                    ing_match = p
+                    break
+            if ing_match:
+                matched_deals.append(ing_match)
+            else:
+                missing_ingredients.append(ing)
+                
+        estimated_total_cost = 0.0
+        total_savings = 0.0
+        serialized_matches = []
+        for p in matched_deals:
+            current_price = _calculate_dynamic_price(p, now)
+            estimated_total_cost += current_price
+            total_savings += (p.original_price - current_price)
+            serialized_matches.append(_serialize_product(p, p.shop))
+            
+        return {
+            "recipe_mode": True,
+            "recipe_name": recipe_name,
+            "ingredients": ingredients,
+            "matched_deals": serialized_matches,
+            "missing_ingredients": missing_ingredients,
+            "estimated_total_cost": round(estimated_total_cost, 2),
+            "total_savings": round(total_savings, 2)
+        }
+
+    # 2. Regular / Semantic Mode
+    parsed_keywords = [q] if q else []
+    parsed_categories = []
+    parsed_max_price = None
+    parsed_min_discount_pct = None
+    parsed_expiry_urgency = None
+    
+    if semantic and q:
+        parsed = await parse_semantic_search(q)
+        parsed_keywords = parsed.get("keywords") or [q]
+        parsed_categories = parsed.get("categories") or []
+        parsed_max_price = parsed.get("max_price")
+        parsed_min_discount_pct = parsed.get("min_discount_pct")
+        parsed_expiry_urgency = parsed.get("expiry_urgency")
+
+    query = db.query(Product).join(Product.shop).options(contains_eager(Product.shop)).filter(
+        Product.quantity > 0,
+        Product.expiry_date > now,
+        Product.is_active == True
+    )
+    
+    from sqlalchemy import or_
+    if parsed_keywords:
+        for token in parsed_keywords:
+            if token:
+                query = query.filter(
+                    or_(
+                        Product.name.ilike(f"%{token}%"),
+                        Product.description.ilike(f"%{token}%"),
+                        Shop.name.ilike(f"%{token}%")
+                    )
+                )
+                
+    if parsed_categories:
+        enum_categories = []
+        for cat_str in parsed_categories:
+            try:
+                enum_categories.append(ProductCategory(cat_str))
+            except ValueError:
+                pass
+        if enum_categories:
+            query = query.filter(Product.category.in_(enum_categories))
+            
+    final_max_price = max_price if max_price is not None else parsed_max_price
+    final_min_discount_pct = min_discount_pct if min_discount_pct is not None else parsed_min_discount_pct
+    final_expiry_urgency = expiry_urgency if expiry_urgency is not None else parsed_expiry_urgency
+    
+    if final_max_price is not None:
+        query = query.filter(Product.discount_price <= final_max_price)
+        
+    if final_min_discount_pct is not None:
+        query = query.filter(
+            ((Product.original_price - Product.discount_price) / Product.original_price) >= (final_min_discount_pct / 100.0)
+        )
+        
+    if final_expiry_urgency == "today":
+        today_end = now.replace(hour=23, minute=59, second=59)
+        query = query.filter(Product.expiry_date <= today_end)
+    elif final_expiry_urgency == "tomorrow":
+        from datetime import timedelta
+        tomorrow_end = (now + timedelta(days=1)).replace(hour=23, minute=59, second=59)
+        query = query.filter(Product.expiry_date <= tomorrow_end)
+    elif final_expiry_urgency == "week":
+        from datetime import timedelta
+        week_end = (now + timedelta(days=7)).replace(hour=23, minute=59, second=59)
+        query = query.filter(Product.expiry_date <= week_end)
+
+    bypass_geo = False
+    if lat is not None and lng is not None:
+        lat_delta = radius_km / 111.0
+        lng_delta = radius_km / (111.0 * math.cos(math.radians(lat)))
+        geo_query = query.filter(
+            Shop.latitude.between(lat - lat_delta, lat + lat_delta),
+            Shop.longitude.between(lng - lng_delta, lng + lng_delta)
+        )
+        if geo_query.count() > 0:
+            query = geo_query
+        else:
+            bypass_geo = True
+            
+    products = query.order_by(Product.expiry_date.asc()).all()
+    
+    out = []
+    for p in products:
+        shop = p.shop
+        if lat is not None and lng is not None and not bypass_geo and shop:
+            dist = haversine_distance(lat, lng, shop.latitude, shop.longitude)
+            if dist > radius_km:
+                continue
+                
+        current_price = _calculate_dynamic_price(p, now)
+        if final_max_price is not None and current_price > final_max_price:
+            continue
+            
+        out.append(_serialize_product(p, shop))
+        
+    return {
+        "recipe_mode": False,
+        "products": out
+    }
 
 
 @router.get("/recommended")
@@ -184,6 +394,25 @@ def get_product_forecast(
         
     forecast = generate_forecast_and_price_recommendation(db, product)
     return forecast
+
+
+@router.get("/{product_id}/ai-insight")
+def get_product_ai_insight(
+    product_id: str,
+    user: Annotated[User, Depends(get_current_shop_owner)],
+    db: Annotated[Session, Depends(get_db)]
+):
+    product = db.get(Product, product_id)
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+    
+    # Verify they own the product shop
+    shop = db.query(Shop).filter(Shop.owner_id == user.id).first()
+    if not shop or product.shop_id != shop.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not own this product's store")
+        
+    insight = generate_forecast_and_price_recommendation(db, product)
+    return insight
 
 
 @upload_router.post("/upload/image")
@@ -237,8 +466,11 @@ def create_product(
     now = datetime.now(UTC).replace(tzinfo=None)
     days_left = (product_in.expiry_date - now).days
     
-    # Auto-calculate discount based on days left
-    discount_price = _calculate_automatic_discount(product_in.original_price, days_left)
+    # Auto-calculate discount based on days left (unless override is provided)
+    if product_in.discount_price is not None:
+        discount_price = product_in.discount_price
+    else:
+        discount_price = _calculate_automatic_discount(product_in.original_price, days_left)
     
     product = Product(
         shop_id=shop.id,
@@ -319,10 +551,13 @@ def update_product(
     if not product or product.shop_id != shop.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found or not yours")
 
-    # Recalculate discount based on new expiry date
-    now = datetime.now(UTC).replace(tzinfo=None)
-    days_left = (product_in.expiry_date - now).days
-    discount_price = _calculate_automatic_discount(product_in.original_price, days_left)
+    # Recalculate discount based on new expiry date (unless override is provided)
+    if product_in.discount_price is not None:
+        discount_price = product_in.discount_price
+    else:
+        now = datetime.now(UTC).replace(tzinfo=None)
+        days_left = (product_in.expiry_date - now).days
+        discount_price = _calculate_automatic_discount(product_in.original_price, days_left)
 
     product.name = product_in.name
     product.category = product_in.category

@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Store, MapPin, CheckCircle2, Loader2, Navigation, Info, ShoppingBag, Search } from "lucide-react";
 import Map from "@/components/Map";
 import { createShop } from "@/services/shops";
+import { fetchIpGeolocation } from "@/lib/geolocation";
 
 interface OsmSuggestion {
   display_name: string;
@@ -89,30 +90,20 @@ export default function ShopSetupPage() {
         },
         (error) => {
           console.warn("GPS failed, falling back to IP geolocation:", error);
-          fetch("http://api.ipstack.com/check?access_key=f06e35bdacbd8a36738efbf3f020c125")
-            .then(res => res.json())
+          fetchIpGeolocation()
             .then(data => {
-              if (data && data.latitude && data.longitude) {
-                setLatitude(data.latitude);
-                setLongitude(data.longitude);
-              } else {
-                alert("Could not get location. " + error.message);
-              }
+              setLatitude(data.latitude);
+              setLongitude(data.longitude);
             })
             .catch(() => alert("Could not get location. " + error.message))
             .finally(() => setIsLocating(false));
         }
       );
     } else {
-      fetch("http://api.ipstack.com/check?access_key=f06e35bdacbd8a36738efbf3f020c125")
-        .then(res => res.json())
+      fetchIpGeolocation()
         .then(data => {
-          if (data && data.latitude && data.longitude) {
-            setLatitude(data.latitude);
-            setLongitude(data.longitude);
-          } else {
-            alert("Geolocation is not supported by your browser.");
-          }
+          setLatitude(data.latitude);
+          setLongitude(data.longitude);
         })
         .catch(() => alert("Geolocation is not supported by your browser."))
         .finally(() => setIsLocating(false));
@@ -320,7 +311,7 @@ export default function ShopSetupPage() {
                     <button 
                       type="button" 
                       onClick={handleGetLocation}
-                      disabled={isLocating || (latitude !== null && longitude !== null)}
+                      disabled={isLocating}
                       className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700 rounded-lg px-4 py-2 font-semibold text-sm transition hover:bg-blue-50 dark:hover:bg-gray-700 disabled:opacity-50"
                     >
                       {isLocating ? (
@@ -330,7 +321,7 @@ export default function ShopSetupPage() {
                       ) : (
                         <Navigation size={16} />
                       )}
-                      {latitude !== null ? "Location Saved" : "Get Current Location"}
+                      {latitude !== null ? "Update Current Location" : "Get Current Location"}
                     </button>
                     {latitude !== null && (
                       <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-500">

@@ -113,14 +113,50 @@ export async function getRecommendedProducts(): Promise<ApiProduct[]> {
   return apiRequest<ApiProduct[]>("/products/recommended");
 }
 
-export async function getProductForecast(productId: string): Promise<{
+export type ApiProductForecast = {
   rescue_probability: number;
-  sellout_hours: number;
+  rescue_confidence_tier: "Low" | "Medium" | "High";
+  predicted_demand_24h: number;
+  predicted_orders_trend: Array<{ hour: string; demand: number }>;
   optimal_discount_percent: number;
   optimal_price: number;
+  pricing_explanation: string;
+  spoilage_risk_score: "Low" | "Medium" | "High";
+  explainability: {
+    days_left_impact: number;
+    stock_impact: number;
+    discount_impact: number;
+    category_demand_impact: number;
+  };
+  sellout_hours: number;
   model_confidence: number;
-}> {
-  return apiRequest<any>(`/products/${productId}/forecast`);
+  demand_score: number;
+};
+
+export async function getProductForecast(productId: string): Promise<ApiProductForecast> {
+  return apiRequest<ApiProductForecast>(`/products/${productId}/forecast`);
+}
+
+export type ApiShopAiInventory = {
+  average_rescue_probability: number;
+  risk_counts: {
+    Low: number;
+    Medium: number;
+    High: number;
+  };
+  total_recovered_revenue: number;
+  co2_saved_kg: number;
+  water_saved_liters: number;
+  items_rescued: number;
+  predicted_sellout_within_24h: number;
+};
+
+export async function getProductAiInsight(productId: string): Promise<ApiProductForecast> {
+  return apiRequest<ApiProductForecast>(`/products/${productId}/ai-insight`);
+}
+
+export async function getShopAiInventory(): Promise<ApiShopAiInventory> {
+  return apiRequest<ApiShopAiInventory>("/shops/me/analytics/ai-inventory");
 }
 
 export async function scanProductDates(file: File): Promise<{
@@ -135,5 +171,51 @@ export async function scanProductDates(file: File): Promise<{
     method: "POST",
     body: formData,
   });
+}
+
+export type DeepSearchParams = {
+  q?: string;
+  semantic?: boolean;
+  recipeMode?: boolean;
+  maxPrice?: number;
+  minDiscountPct?: number;
+  expiryUrgency?: string;
+  lat?: number;
+  lng?: number;
+  radiusKm?: number;
+};
+
+export type ApiRecipeSearchResponse = {
+  recipe_mode: true;
+  recipe_name: string;
+  ingredients: string[];
+  matched_deals: ApiProduct[];
+  missing_ingredients: string[];
+  estimated_total_cost: number;
+  total_savings: number;
+};
+
+export type ApiRegularSearchResponse = {
+  recipe_mode: false;
+  products: ApiProduct[];
+};
+
+export type ApiDeepSearchResponse = ApiRecipeSearchResponse | ApiRegularSearchResponse;
+
+export async function getDeepSearchResults(params: DeepSearchParams): Promise<ApiDeepSearchResponse> {
+  const search = new URLSearchParams();
+  if (params.q) search.set("q", params.q);
+  if (params.semantic) search.set("semantic", "true");
+  if (params.recipeMode) search.set("recipe_mode", "true");
+  if (params.maxPrice != null) search.set("max_price", String(params.maxPrice));
+  if (params.minDiscountPct != null) search.set("min_discount_pct", String(params.minDiscountPct));
+  if (params.expiryUrgency) search.set("expiry_urgency", params.expiryUrgency);
+  if (params.lat != null) search.set("lat", String(params.lat));
+  if (params.lng != null) search.set("lng", String(params.lng));
+  if (params.radiusKm != null) search.set("radius_km", String(params.radiusKm));
+
+  const qs = search.toString();
+  const path = qs ? `/products/search/deep?${qs}` : "/products/search/deep";
+  return apiRequest<ApiDeepSearchResponse>(path);
 }
 

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthenticationContext";
 import { getErrorMessage } from "@/api/errors";
-import { getProducts, updateProduct, uploadImage, optimizeProductDetails } from "@/services/products";
+import { getProducts, updateProduct, uploadImage, optimizeProductDetails, scanProductDates } from "@/services/products";
 import { getMyShop } from "@/services/shops";
 import { ApiProductCreate, ProductCategory } from "@/types/product";
 
@@ -49,8 +49,42 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanMessage, setScanMessage] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  const handleScanDates = async (fileToScan?: File) => {
+    const file = fileToScan || expiryImageFile;
+    if (!file) {
+      alert("Please upload a new expiry date image first to scan.");
+      return;
+    }
+    setIsScanning(true);
+    setScanMessage("");
+    setError("");
+    try {
+      const result = await scanProductDates(file);
+      if (result.manufacturing_date) {
+        setManufacturingDate(result.manufacturing_date);
+      }
+      if (result.expiry_date) {
+        setExpiryDate(result.expiry_date);
+      }
+      if (result.manufacturing_date || result.expiry_date) {
+        setScanMessage(
+          `AI scanned dates successfully! Mfg: ${result.manufacturing_date || "Not detected"}, Exp: ${result.expiry_date || "Not detected"}`
+        );
+      } else {
+        setError("AI could not detect any dates in this image. Please enter them manually.");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("AI date scan failed. Please enter the dates manually.");
+    } finally {
+      setIsScanning(false);
+    }
+  };
 
   // 1. Get Shop ID
   useEffect(() => {
@@ -611,20 +645,51 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                   className="relative border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl p-8 text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-500/5 transition-all"
                 >
                   {expiryImage ? (
-                    <div className="relative inline-block">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={expiryImage} alt="Preview" className="h-32 w-32 object-cover rounded-xl border" />
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setExpiryImage(null);
-                          setExpiryImageFile(null);
-                        }}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                    <div className="space-y-4">
+                      <div className="relative inline-block">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={expiryImage} alt="Preview" className="h-32 w-32 object-cover rounded-xl border" />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpiryImage(null);
+                            setExpiryImageFile(null);
+                            setScanMessage("");
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                      <div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleScanDates();
+                          }}
+                          disabled={isScanning}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/50 disabled:opacity-50 transition"
+                        >
+                          {isScanning ? (
+                            <>
+                              <Loader2 size={16} className="animate-spin text-emerald-600 dark:text-emerald-400" />
+                              Scanning Label...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles size={16} className="text-emerald-600 dark:text-emerald-400" />
+                              AI Scan Dates from Photo
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      {scanMessage && (
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50/50 dark:bg-emerald-500/5 p-2 rounded-lg">
+                          ✓ {scanMessage}
+                        </p>
+                      )}
                     </div>
                   ) : (
                     <div>
@@ -636,7 +701,18 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
                     ref={expiryImageInputRef}
                     type="file"
                     accept="image/*"
-                    onChange={(e) => handleImageUpload(e, setExpiryImage, setExpiryImageFile)}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setExpiryImageFile(file);
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setExpiryImage(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                        handleScanDates(file);
+                      }
+                    }}
                     className="hidden"
                   />
                 </div>

@@ -13,6 +13,7 @@ import { listShops, type ShopWithDescription } from "@/services/shops";
 import { getProducts } from "@/services/products";
 import type { ApiProduct } from "@/types/product";
 import { getSafeImageUrl } from "@/lib/images";
+import { fetchIpGeolocation } from "@/lib/geolocation";
 
 const MapComponent = dynamic(() => import("@/components/MapComponent"), {
   ssr: false,
@@ -41,13 +42,10 @@ export default function MapDiscovery() {
   const [userLng, setUserLng] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch("http://api.ipstack.com/check?access_key=f06e35bdacbd8a36738efbf3f020c125")
-      .then((res) => res.json())
+    fetchIpGeolocation()
       .then((data) => {
-        if (data && data.latitude && data.longitude) {
-          setUserLat(data.latitude);
-          setUserLng(data.longitude);
-        }
+        setUserLat(data.latitude);
+        setUserLng(data.longitude);
       })
       .catch((err) => console.error("Map IP geolocation failed:", err));
   }, []);
