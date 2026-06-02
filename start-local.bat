@@ -10,7 +10,7 @@ echo.
 
 REM Start Backend in one terminal
 echo [1/2] Starting Backend on http://localhost:8000...
-start cmd /k "cd backend && python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000"
+start cmd /k "cd backend && .venv\Scripts\python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000"
 
 REM Wait a moment for backend to start
 timeout /t 3 /nobreak
