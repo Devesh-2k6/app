@@ -9,20 +9,40 @@ const customIcon = new L.DivIcon({
   className: "custom-map-marker",
   html: `
     <div style="
-      background-color: #10b981; 
-      width: 24px; 
-      height: 24px; 
-      border-radius: 50%; 
-      border: 3px solid white; 
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2), 0 2px 4px -1px rgba(0,0,0,0.06);
       position: relative;
-      top: -12px;
-      left: -12px;
-    "></div>
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      top: -16px;
+      left: -16px;
+    ">
+      <span style="
+        position: absolute;
+        display: inline-flex;
+        height: 100%;
+        width: 100%;
+        border-radius: 50%;
+        background-color: #34d399;
+        opacity: 0.5;
+        animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+      "></span>
+      <span style="
+        position: relative;
+        display: inline-flex;
+        border-radius: 50%;
+        height: 16px;
+        width: 16px;
+        background-color: #10b981;
+        border: 2px solid white;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+      "></span>
+    </div>
   `,
-  iconSize: [24, 24],
-  iconAnchor: [12, 24],
-  popupAnchor: [0, -24],
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+  popupAnchor: [0, -16],
 });
 
 function RecenterMap({ lat, lng, zoom }: { lat: number; lng: number; zoom: number }) {
@@ -30,6 +50,14 @@ function RecenterMap({ lat, lng, zoom }: { lat: number; lng: number; zoom: numbe
   useEffect(() => {
     map.flyTo([lat, lng], zoom, { animate: true, duration: 1.5 });
   }, [lat, lng, zoom, map]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [map]);
+
   return null;
 }
 
@@ -74,8 +102,8 @@ export default function MapComponent({
         attributionControl={false}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          attribution='&copy; OpenStreetMap &copy; CARTO'
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
         />
         {points.map((m) => (
           <Marker

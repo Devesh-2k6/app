@@ -5,17 +5,10 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
+import { listShops, type ShopWithDescription } from "@/services/shops";
+
 // Chennai coordinates
 const CHENNAI_CENTER: [number, number] = [13.0827, 80.2707];
-
-// Mock data for live deals
-const LIVE_DEALS = [
-  { id: 1, pos: [13.0827, 80.2707], name: "Fresh Bakery", discount: "65%" },
-  { id: 2, pos: [13.0727, 80.2607], name: "Green Grocers", discount: "50%" },
-  { id: 3, pos: [13.0927, 80.2807], name: "City Dairy", discount: "40%" },
-  { id: 4, pos: [13.0627, 80.2507], name: "Sweet Tooth", discount: "70%" },
-  { id: 5, pos: [13.1027, 80.2907], name: "Veggie Market", discount: "55%" }
-];
 
 // Custom pulsing marker icon
 const createPulseIcon = () => {
@@ -46,10 +39,17 @@ function MapResizer() {
 export default function HeroMap() {
   const [mounted, setMounted] = useState(false);
   const [icon, setIcon] = useState<L.DivIcon | null>(null);
+  const [shops, setShops] = useState<ShopWithDescription[]>([]);
 
   useEffect(() => {
     setMounted(true);
     setIcon(createPulseIcon());
+    
+    // Fetch live shops with active deals
+    listShops().then(data => {
+      // Filter only shops that actually have active deals
+      setShops(data.filter(s => s.deal_count && s.deal_count > 0));
+    }).catch(console.error);
   }, []);
 
   if (!mounted || !icon) return <div className="w-full h-full bg-emerald-50/50 animate-pulse rounded-3xl"></div>;
@@ -70,12 +70,12 @@ export default function HeroMap() {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
-        {LIVE_DEALS.map((deal) => (
-          <Marker key={deal.id} position={deal.pos as [number, number]} icon={icon}>
+        {shops.map((shop) => (
+          <Marker key={shop.id} position={[shop.latitude, shop.longitude]} icon={icon}>
             <Popup className="custom-popup">
               <div className="text-[#1A1A1A] font-bold">
-                <div className="text-emerald-600 text-xs uppercase tracking-widest mb-1">{deal.discount} OFF</div>
-                <div className="text-sm">{deal.name}</div>
+                <div className="text-emerald-600 text-xs uppercase tracking-widest mb-1">{shop.deal_count} {shop.deal_count === 1 ? 'Deal' : 'Deals'}</div>
+                <div className="text-sm">{shop.name}</div>
               </div>
             </Popup>
           </Marker>

@@ -23,6 +23,77 @@ import { useConfetti } from "@/hooks/useConfetti";
 import { useSound } from "@/hooks/useSound";
 import AnimatedCounter from "@/components/ui/AnimatedCounter";
 import MagneticButton from "@/components/ui/MagneticButton";
+import LiveDealsSection from "@/components/products/LiveDealsSection";
+
+// Custom inline SVG icons for brands removed in lucide-react v1
+const Twitter = ({ size = 24 }: { size?: number }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
+  </svg>
+);
+
+const Instagram = ({ size = 24 }: { size?: number }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+  </svg>
+);
+
+const Linkedin = ({ size = 24 }: { size?: number }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+    <rect width="4" height="12" x="2" y="9" />
+    <circle cx="4" cy="4" r="2" />
+  </svg>
+);
+
+const Github = ({ size = 24 }: { size?: number }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+    <path d="M9 18c-4.51 2-5-2-7-2" />
+  </svg>
+);
 
 // Dynamically import client components
 const HeroMap = dynamic(() => import('@/components/map/HeroMap'), { ssr: false });
@@ -199,211 +270,8 @@ export default function Home() {
 
       {/* Divider */}
       <div className="h-px w-full max-w-7xl mx-auto bg-gradient-to-r from-transparent via-emerald-100 to-transparent" />
-
-      {/* Nearby Deals Section */}
-      <section className="max-w-5xl mx-auto px-4 py-24 relative z-10">
-        <motion.div {...fadeInUp} className="mb-12">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles size={16} className="text-emerald-600" />
-            <h3 className="text-emerald-600 font-bold text-sm tracking-widest uppercase">Nearby Deals</h3>
-          </div>
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight text-slate-900">Freshness hunting, made easy</h2>
-          <p className="text-slate-600 font-medium text-lg max-w-2xl">Real-time listings from shops in your neighbourhood. Updated hourly to bring you the best local steals.</p>
-        </motion.div>
-
-        <motion.div {...fadeInUp} className="flex flex-wrap gap-3 mb-12 overflow-x-auto pb-2 scrollbar-hide">
-          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-bold shadow-md shadow-emerald-950/10 cursor-pointer">All</button>
-          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-white border border-emerald-100 text-slate-700 font-semibold hover:bg-emerald-50/50 hover:border-emerald-200 transition-all whitespace-nowrap cursor-pointer">Bakery</button>
-          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-white border border-emerald-100 text-slate-700 font-semibold hover:bg-emerald-50/50 hover:border-emerald-200 transition-all whitespace-nowrap cursor-pointer">Dairy</button>
-          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-white border border-emerald-100 text-slate-700 font-semibold hover:bg-emerald-50/50 hover:border-emerald-200 transition-all whitespace-nowrap cursor-pointer">Snacks</button>
-          <button onClick={playPopSound} className="px-6 py-2.5 rounded-xl bg-white border border-emerald-100 text-slate-700 font-semibold hover:bg-emerald-50/50 hover:border-emerald-200 transition-all whitespace-nowrap cursor-pointer">Produce</button>
-        </motion.div>        <motion.div 
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-50px" }}
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
-        >
-          {/* Card 1 — Urgent + Selling Fast */}
-          <motion.div variants={staggerItem} className="rounded-3xl border border-red-200 bg-white overflow-hidden flex flex-col group hover:-translate-y-1 hover:shadow-[0_15px_30px_-10px_rgba(239,68,68,0.12)] hover:border-red-400 transition-all duration-300 relative animate-border-glow-red shadow-sm">
-            <div className="bg-gradient-to-br from-[#FFDFB3] to-[#FFC980] h-56 relative flex items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/5 transition-opacity duration-500" />
-              {/* Urgency badge */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.7, x: -8 }}
-                whileInView={{ opacity: 1, scale: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.3 }}
-                className="absolute top-4 left-4 flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold text-red-100 bg-red-500/90 backdrop-blur-md shadow-lg animate-urgency-pulse z-10"
-              >
-                <span>🔥</span> Selling Fast
-              </motion.div>
-              <div className="absolute top-4 right-4 bg-[#FF4C4C] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1 animate-pulse">
-                <Clock size={12} /> Expires today
-              </div>
-              {/* Freshness dot */}
-              <div className="absolute bottom-3 right-3 w-3 h-3 rounded-full bg-red-500 ring-2 ring-white animate-freshness-breath z-10" />
-              <motion.span whileHover={{ scale: 1.15, rotate: 5 }} className="text-8xl drop-shadow-2xl">🍞</motion.span>
-            </div>
-            <div className="p-6 flex-1 flex flex-col relative">
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#FF4C4C] to-transparent opacity-50" />
-              <div className="flex items-center gap-2 mb-2">
-                <div className="text-slate-500 text-xs font-black tracking-widest uppercase">Bakery</div>
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-red-600 bg-red-50">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-freshness-breath" />
-                  Urgent
-                </span>
-              </div>
-              <h4 className="text-2xl font-bold mb-3 text-slate-900 group-hover:text-red-700 transition-colors">Sourdough Bread</h4>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-slate-400 line-through text-sm font-medium">₹80</span>
-                <span className="text-red-600 text-3xl font-black">₹28</span>
-                <span className="bg-emerald-500/15 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-md ml-auto animate-slide-in-right">65% off</span>
-              </div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-red-600 bg-red-50 flex items-center gap-1">
-                  <Clock size={10} /> Expires in 6 hours
-                </span>
-                <span className="text-[10px] font-bold text-red-600">Only 2 left!</span>
-              </div>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.35, type: "spring", stiffness: 350, damping: 18 }}
-                className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 w-max mb-4"
-              >
-                Save ₹52
-              </motion.div>
-              
-              <div className="mt-auto flex items-center justify-between pt-4 border-t border-emerald-100/40">
-                <div className="flex items-center text-sm font-bold text-slate-600">
-                  <MapPin size={16} className="mr-1.5 text-emerald-600" /> 0.4 km
-                </div>
-                <button onClick={handleReserve} className="bg-red-500 hover:bg-red-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all duration-300 hover:shadow-[0_4px_12px_rgba(239,68,68,0.2)] cursor-pointer">
-                  Grab Now
-                </button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 2 — Near Expiry + Limited Stock */}
-          <motion.div variants={staggerItem} className="rounded-3xl border border-orange-200 bg-white overflow-hidden flex flex-col group hover:-translate-y-1 hover:shadow-[0_15px_30px_-10px_rgba(249,115,22,0.1)] hover:border-orange-400 transition-all duration-300 relative animate-border-glow-orange shadow-sm">
-            <div className="bg-gradient-to-br from-[#C2F0E0] to-[#8EE1C3] h-56 relative flex items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/5 transition-opacity duration-500" />
-              {/* Urgency badge */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.7, x: -8 }}
-                whileInView={{ opacity: 1, scale: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ type: "spring", stiffness: 400, damping: 20, delay: 0.4 }}
-                className="absolute top-4 left-4 flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-bold text-amber-200 bg-amber-500/80 backdrop-blur-md shadow-lg z-10"
-              >
-                <span>📦</span> Limited Stock
-              </motion.div>
-              <div className="absolute top-4 right-4 bg-orange-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-                2 days left
-              </div>
-              {/* Freshness dot */}
-              <div className="absolute bottom-3 right-3 w-3 h-3 rounded-full bg-orange-500 ring-2 ring-white z-10" />
-              <motion.span whileHover={{ scale: 1.15, rotate: -5 }} className="text-8xl drop-shadow-2xl">🥛</motion.span>
-            </div>
-            <div className="p-6 flex-1 flex flex-col relative">
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
-              <div className="flex items-center gap-2 mb-2">
-                <div className="text-slate-500 text-xs font-black tracking-widest uppercase">Dairy</div>
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-orange-600 bg-orange-50">
-                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                  Near Expiry
-                </span>
-              </div>
-              <h4 className="text-2xl font-bold mb-3 text-slate-900 group-hover:text-emerald-700 transition-colors">Greek Yogurt 4-pack</h4>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-slate-400 line-through text-sm font-medium">₹160</span>
-                <span className="text-emerald-600 text-3xl font-black">₹80</span>
-                <span className="bg-emerald-500/15 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-md ml-auto animate-slide-in-right">50% off</span>
-              </div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-orange-600 bg-orange-50 flex items-center gap-1">
-                  <Clock size={10} /> Expires in 2 days
-                </span>
-                <span className="text-[10px] font-bold text-amber-600">4 left</span>
-              </div>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4, type: "spring", stiffness: 350, damping: 18 }}
-                className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 w-max mb-4"
-              >
-                Save ₹80
-              </motion.div>
-              
-              <div className="mt-auto flex items-center justify-between pt-4 border-t border-emerald-100/40">
-                <div className="flex items-center text-sm font-bold text-slate-600">
-                  <MapPin size={16} className="mr-1.5 text-emerald-600" /> 1.2 km
-                </div>
-                <button onClick={handleReserve} className="bg-emerald-50 hover:bg-emerald-600 hover:text-white border border-emerald-200 text-emerald-700 hover:border-emerald-600 font-bold px-5 py-2.5 rounded-xl text-sm transition-all duration-300 cursor-pointer">
-                  Reserve
-                </button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 3 — Fresh + No urgency */}
-          <motion.div variants={staggerItem} className="rounded-3xl border border-emerald-100 bg-white overflow-hidden flex flex-col group hover:-translate-y-1 hover:shadow-[0_15px_30px_-10px_rgba(16,185,129,0.08)] hover:border-emerald-300 transition-all duration-300 relative shadow-sm">
-            <div className="bg-gradient-to-br from-[#DFD8F9] to-[#C3B8F5] h-56 relative flex items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/5 transition-opacity duration-500" />
-              <div className="absolute top-4 right-4 bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-                5 days left
-              </div>
-              {/* Freshness dot */}
-              <div className="absolute bottom-3 right-3 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white z-10" />
-              <motion.span whileHover={{ scale: 1.15, rotate: 10 }} className="text-8xl drop-shadow-2xl">🍟</motion.span>
-            </div>
-            <div className="p-6 flex-1 flex flex-col relative">
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-0 group-hover:opacity-50 transition-opacity duration-500" />
-              <div className="flex items-center gap-2 mb-2">
-                <div className="text-slate-500 text-xs font-black tracking-widest uppercase">Snacks</div>
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-600 bg-emerald-50">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  Fresh
-                </span>
-              </div>
-              <h4 className="text-2xl font-bold mb-3 text-slate-900 group-hover:text-indigo-700 transition-colors">Chips Variety Box ×8</h4>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-slate-400 line-through text-sm font-medium">₹240</span>
-                <span className="text-emerald-600 text-3xl font-black">₹120</span>
-                <span className="bg-emerald-500/15 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-md ml-auto animate-slide-in-right">50% off</span>
-              </div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-600 bg-emerald-50 flex items-center gap-1">
-                  <Clock size={10} /> Expires in 5 days
-                </span>
-                <span className="text-[10px] font-semibold text-slate-500">12 left</span>
-              </div>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.45, type: "spring", stiffness: 350, damping: 18 }}
-                className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 w-max mb-4"
-              >
-                Save ₹120
-              </motion.div>
-              
-              <div className="mt-auto flex items-center justify-between pt-4 border-t border-emerald-100/40">
-                <div className="flex items-center text-sm font-bold text-slate-600">
-                  <MapPin size={16} className="mr-1.5 text-emerald-600" /> 2.1 km
-                </div>
-                <button onClick={handleReserve} className="bg-emerald-50 hover:bg-emerald-600 hover:text-white border border-emerald-200 text-emerald-700 hover:border-emerald-600 font-bold px-5 py-2.5 rounded-xl text-sm transition-all duration-300 cursor-pointer">
-                  Reserve
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
-      </section>
+      {/* Live Deals Section from Backend */}
+      <LiveDealsSection />
 
       {/* Divider */}
       <div className="h-px w-full max-w-7xl mx-auto bg-gradient-to-r from-transparent via-emerald-100 to-transparent" />

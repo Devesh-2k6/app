@@ -164,27 +164,31 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden">
-      <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-emerald-600/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-[#111111] flex flex-col items-center justify-center px-4 py-10 relative overflow-hidden">
+      {/* Ambient Parallax Background Glows */}
+      <div className="absolute top-0 inset-x-0 h-[120vh] overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[20%] -left-40 w-[40vw] h-[40vw] min-w-[500px] min-h-[500px] bg-emerald-500/20 rounded-full blur-[130px] animate-pulse" />
+        <div className="absolute -bottom-40 -right-20 w-[45vw] h-[45vw] min-w-[600px] min-h-[600px] bg-amber-500/10 rounded-full blur-[150px]" />
+      </div>
 
-      <Link href="/" className="relative z-10 flex items-center gap-2 mb-8 text-white">
-        <div className="bg-emerald-500 p-2 rounded-xl">
+      <Link href="/" className="relative z-10 flex items-center gap-2 mb-8 text-white group cursor-pointer">
+        <div className="bg-emerald-500 p-2 rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-[0_0_15px_rgba(16,185,129,0.5)]">
           <Leaf size={22} />
         </div>
         <span className="text-2xl font-black">
-          Fresh<span className="text-emerald-400">Save</span>
+          Expiry<span className="text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">Go</span>
         </span>
       </Link>
 
-      <div className="relative z-10 w-full max-w-md bg-white dark:bg-gray-900 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
-        <div className="flex border-b border-gray-100 dark:border-gray-800">
+      <div className="relative z-10 w-full max-w-md bg-[#1A1A1A]/80 backdrop-blur-2xl rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/5 overflow-hidden">
+        <div className="flex border-b border-white/5">
           <button
             type="button"
             onClick={() => setTab("login")}
             className={`flex-1 py-4 text-sm font-bold transition ${
               tab === "login"
-                ? "text-emerald-600 border-b-2 border-emerald-500 bg-emerald-50/50 dark:bg-emerald-500/5"
-                : "text-gray-500"
+                ? "text-emerald-400 border-b-2 border-emerald-500 bg-emerald-500/5"
+                : "text-gray-500 hover:text-gray-300"
             }`}
           >
             Log in
@@ -194,8 +198,8 @@ export default function AuthPage() {
             onClick={() => setTab("signup")}
             className={`flex-1 py-4 text-sm font-bold transition ${
               tab === "signup"
-                ? "text-emerald-600 border-b-2 border-emerald-500 bg-emerald-50/50 dark:bg-emerald-500/5"
-                : "text-gray-500"
+                ? "text-emerald-400 border-b-2 border-emerald-500 bg-emerald-500/5"
+                : "text-gray-500 hover:text-gray-300"
             }`}
           >
             Sign up
@@ -214,7 +218,7 @@ export default function AuthPage() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  className="w-full rounded-xl border border-white/10 bg-[#111111] text-white px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                   placeholder="Your name"
                 />
               </div>
@@ -227,10 +231,10 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => setIsShopOwner(false)}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 text-sm font-semibold transition ${
+                    className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 text-sm font-semibold transition cursor-pointer ${
                       !isShopOwner
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
-                        : "border-gray-200 dark:border-gray-700 text-gray-500"
+                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
+                        : "border-white/10 text-gray-400 hover:text-white hover:border-white/20"
                     }`}
                   >
                     <ShoppingBag size={18} />
@@ -239,10 +243,10 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => setIsShopOwner(true)}
-                    className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 text-sm font-semibold transition ${
+                    className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 text-sm font-semibold transition cursor-pointer ${
                       isShopOwner
-                        ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
-                        : "border-gray-200 dark:border-gray-700 text-gray-500"
+                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-400"
+                        : "border-white/10 text-gray-400 hover:text-white hover:border-white/20"
                     }`}
                   >
                     <Store size={18} />
@@ -276,7 +280,7 @@ export default function AuthPage() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-xl border border-white/10 bg-[#111111] text-white px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
               placeholder="you@example.com"
             />
           </div>
@@ -292,7 +296,7 @@ export default function AuthPage() {
                 autoComplete={tab === "signup" ? "new-password" : "current-password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 pr-11 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                className="w-full rounded-xl border border-white/10 bg-[#111111] text-white px-4 py-3 pr-11 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                 placeholder="••••••••"
               />
               <button
@@ -316,7 +320,7 @@ export default function AuthPage() {
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                className="w-full rounded-xl border border-white/10 bg-[#111111] text-white px-4 py-3 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                 placeholder="••••••••"
               />
             </div>

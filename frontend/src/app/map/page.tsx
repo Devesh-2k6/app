@@ -114,40 +114,40 @@ export default function MapDiscovery() {
   };
 
   return (
-    <div className="h-screen w-full relative overflow-hidden bg-emerald-50 dark:bg-gray-900">
+    <div className="h-screen w-full relative overflow-hidden bg-[#111111] text-white">
       <div className="absolute top-0 inset-x-0 z-[400] p-4 pt-safe flex items-center gap-3 pointer-events-none">
         <Link
           href="/deals"
-          className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md p-3 rounded-full shadow-lg border border-gray-100 dark:border-gray-800 transition hover:scale-105 pointer-events-auto"
+          className="bg-[#1A1A1A]/90 backdrop-blur-md p-3 rounded-full shadow-lg border border-white/5 transition hover:scale-105 pointer-events-auto text-white hover:border-white/10"
         >
-          <ArrowLeft size={20} className="text-gray-900 dark:text-white" />
+          <ArrowLeft size={20} />
         </Link>
-        <div className="flex-1 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-full shadow-lg border border-gray-100 dark:border-gray-800 flex items-center px-4 py-3 pointer-events-auto">
-          <Search size={18} className="text-gray-400 mr-2" />
+        <div className="flex-1 bg-[#1A1A1A]/90 backdrop-blur-md rounded-full shadow-lg border border-white/5 flex items-center px-4 py-3 pointer-events-auto focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/50 transition-all">
+          <Search size={18} className="text-gray-500 mr-2" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search shops..."
-            className="w-full bg-transparent outline-none text-sm font-medium text-gray-900 dark:text-white"
+            className="w-full bg-transparent outline-none text-sm font-semibold text-white placeholder-gray-500"
           />
         </div>
         <button
           type="button"
-          className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md p-3 rounded-full shadow-lg border border-gray-100 dark:border-gray-800 transition hover:scale-105 pointer-events-auto"
+          className="bg-[#1A1A1A]/90 backdrop-blur-md p-3 rounded-full shadow-lg border border-white/5 transition hover:scale-105 pointer-events-auto text-white hover:border-white/10"
           aria-label="Filters"
         >
-          <Filter size={20} className="text-gray-900 dark:text-white" />
+          <Filter size={20} />
         </button>
       </div>
 
       <div className="absolute inset-0 z-0">
         {status === "loading" ? (
-          <div className="w-full h-full flex items-center justify-center">
+          <div className="w-full h-full flex items-center justify-center bg-[#111111]">
             <Loader2 className="animate-spin text-emerald-500" size={36} />
           </div>
         ) : status === "error" ? (
-          <div className="w-full h-full flex items-center justify-center px-6 text-center text-red-600 text-sm">
+          <div className="w-full h-full flex items-center justify-center px-6 text-center text-red-400 text-sm font-bold bg-[#111111]">
             {errorMessage}
           </div>
         ) : (
@@ -168,7 +168,7 @@ export default function MapDiscovery() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/20 z-[450]"
+              className="absolute inset-0 bg-black/40 z-[450]"
               onClick={() => setSelectedShop(null)}
             />
             <motion.div
@@ -176,29 +176,29 @@ export default function MapDiscovery() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="absolute bottom-0 inset-x-0 z-[500] bg-white dark:bg-gray-900 rounded-t-3xl shadow-2xl border-t border-gray-200 dark:border-gray-800 p-6 pb-safe max-h-[55vh] overflow-y-auto"
+              className="absolute bottom-0 inset-x-0 z-[500] bg-[#161616]/95 backdrop-blur-3xl rounded-t-[2.5rem] shadow-[0_-20px_50px_rgba(0,0,0,0.8)] border-t border-white/5 p-6 pb-safe max-h-[55vh] overflow-y-auto"
             >
-              <div className="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-6" />
+              <div className="w-12 h-1.5 bg-white/10 rounded-full mx-auto mb-6" />
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  <h2 className="text-2xl font-black tracking-tight text-white">
                     {selectedShop.name}
                   </h2>
-                  <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
+                  <p className="text-gray-400 mt-1 text-sm font-medium">
                     {selectedShop.address}
                   </p>
                 </div>
-                <div className="bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 px-3 py-1.5 rounded-xl text-sm font-bold">
+                <div className="bg-red-500/10 text-red-400 border border-red-500/20 px-3.5 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider">
                   {selectedShop.deals.length || selectedShop.deal_count || 0} Deals
                 </div>
               </div>
-              <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6">
+              <div className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 scrollbar-hide">
                 {selectedShop.deals.slice(0, 8).map((p) => (
                   <div
                     key={p.id}
-                    className="min-w-[140px] bg-gray-50 dark:bg-gray-800 rounded-2xl p-3 border border-gray-100 dark:border-gray-700 flex-shrink-0"
+                    className="min-w-[140px] bg-[#242424] rounded-2xl p-3 border border-white/5 flex-shrink-0"
                   >
-                    <div className="h-20 w-full bg-gray-200 rounded-xl mb-3 overflow-hidden relative">
+                    <div className="h-20 w-full bg-[#1A1A1A] rounded-xl mb-3 overflow-hidden relative border border-white/5">
                       <Image
                         src={getSafeImageUrl(p.front_image_url)}
                         alt={p.name}
@@ -207,26 +207,26 @@ export default function MapDiscovery() {
                         className="object-cover"
                       />
                     </div>
-                    <h4 className="text-xs font-bold text-gray-900 dark:text-white mb-1 line-clamp-1">
+                    <h4 className="text-xs font-bold text-white mb-1.5 line-clamp-1">
                       {p.name}
                     </h4>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
+                      <span className="text-sm font-black text-emerald-400">
                         ₹{p.discount_price.toFixed(2)}
                       </span>
-                      <span className="text-[10px] text-gray-400 line-through">
+                      <span className="text-[10px] text-gray-500 line-through">
                         ₹{p.original_price.toFixed(2)}
                       </span>
                     </div>
                   </div>
                 ))}
                 {selectedShop.deals.length === 0 && (
-                  <p className="text-sm text-gray-500 py-4">No active deals at this shop.</p>
+                  <p className="text-sm text-gray-500 py-4 font-medium pl-6">No active deals at this shop.</p>
                 )}
               </div>
               <Link
                 href="/deals"
-                className="block w-full mt-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold py-4 rounded-xl shadow-lg text-center"
+                className="block w-full mt-4 bg-emerald-500 hover:bg-emerald-400 text-[#111111] font-black py-4 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] transition-all duration-300 text-center"
               >
                 Browse all deals
               </Link>
