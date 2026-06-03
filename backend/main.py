@@ -1,7 +1,9 @@
 import time
 import json
 import logging
+import os
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
 from websocket_manager import manager
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -35,16 +37,21 @@ async def lifespan(_app: FastAPI):
     elapsed = time.perf_counter() - start
     logger.info(f"Backend database initialized in {elapsed:.3f} seconds.")
     
+    # Detect if running under tests
+    import sys
+    import os
+    is_testing = "pytest" in sys.modules or os.getenv("TESTING") == "True"
+    
     # Initialize Redis Cache
     try:
         redis = aioredis.from_url(settings.REDIS_URL, encoding="utf8", decode_responses=True)
         await redis.ping()
-        FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
-        logger.info("Redis cache initialized successfully.")
+        FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache", enable=not is_testing)
+        logger.info(f"Redis cache initialized successfully (enabled: {not is_testing}).")
     except Exception as e:
         logger.warning(f"Redis connection failed: {e}. Falling back to InMemoryBackend for local caching.")
         from fastapi_cache.backends.inmemory import InMemoryBackend
-        FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache")
+        FastAPICache.init(InMemoryBackend(), prefix="fastapi-cache", enable=not is_testing)
         
     yield
 
@@ -109,3 +116,7 @@ app.include_router(reservations.router)
 app.include_router(orders.router)
 app.include_router(interactions.router)
 app.include_router(analytics.router)
+
+# Serve local static uploads fallback
+os.makedirs("static/uploads", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")

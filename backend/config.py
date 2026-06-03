@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     # App Settings
     DEBUG: bool = Field(default=True)
     CORS_ORIGINS: str = Field(default="*") # Can be comma-separated list of origins
+    API_BASE_URL: str = Field(default="http://localhost:8000")
     
     # Database Settings
     DATABASE_URL: str = Field(default="sqlite:///./freshsave_local_dev.db")

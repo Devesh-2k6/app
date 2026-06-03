@@ -179,8 +179,9 @@ def generate_forecast_and_price_recommendation(db: Session, product: Product) ->
     for t in all_completed_orders + all_completed_reservations:
         prod = t.product
         if prod:
-            discount_pct = ((prod.original_price - t.total_price / t.quantity) / prod.original_price) if prod.original_price > 0 else 0.0
-            price_frac = (t.total_price / t.quantity) / prod.original_price if prod.original_price > 0 else 1.0
+            qty = max(1, t.quantity)
+            discount_pct = ((prod.original_price - t.total_price / qty) / prod.original_price) if prod.original_price > 0 else 0.0
+            price_frac = (t.total_price / qty) / prod.original_price if prod.original_price > 0 else 1.0
             days_diff = max(1, (prod.expiry_date - t.created_at).days)
             
             prod_cat_str = prod.category.value if hasattr(prod.category, "value") else str(prod.category)
@@ -351,4 +352,95 @@ def generate_forecast_and_price_recommendation(db: Session, product: Product) ->
         "sellout_hours": sellout_hours,
         "model_confidence": 0.88,
         "demand_score": demand_score
+    }
+
+
+def train_diagnostics_model(db: Session) -> Dict[str, Any]:
+    """
+    Dynamically trains the Logistic Regression model on current live database records
+    (completed orders, completed reservations, expired products, plus synthetic anchors)
+    and returns the mathematically-derived weights, bias, sample sizes, and model accuracy.
+    """
+    now = datetime.now()
+    category_demand_map = {
+        "BAKERY": 0.8,
+        "DAIRY": 0.85,
+        "MEAT": 0.9,
+        "PRODUCE": 0.75,
+        "PREPARED_FOOD": 0.8,
+        "PANTRY": 0.5,
+        "OTHER": 0.6
+    }
+
+    all_completed_orders = db.query(Order).filter(Order.status == "DELIVERED").all()
+    all_completed_reservations = db.query(Reservation).filter(Reservation.status == "COMPLETED").all()
+    
+    records = []
+    
+    for t in all_completed_orders + all_completed_reservations:
+        prod = t.product
+        if prod:
+            qty = max(1, t.quantity)
+            discount_pct = ((prod.original_price - t.total_price / qty) / prod.original_price) if prod.original_price > 0 else 0.0
+            price_frac = (t.total_price / qty) / prod.original_price if prod.original_price > 0 else 1.0
+            days_diff = max(1, (prod.expiry_date - t.created_at).days)
+            
+            prod_cat_str = prod.category.value if hasattr(prod.category, "value") else str(prod.category)
+            prod_cat_baseline = category_demand_map.get(prod_cat_str, 0.6)
+            
+            records.append({
+                "discount_pct": discount_pct,
+                "price_frac": price_frac,
+                "days_left": float(days_diff),
+                "quantity": float(t.quantity),
+                "category_demand": prod_cat_baseline,
+                "label": 1
+            })
+            
+    expired_products = db.query(Product).filter(Product.expiry_date < now).all()
+    for prod in expired_products:
+        discount_pct = (prod.original_price - prod.discount_price) / prod.original_price if prod.original_price > 0 else 0.0
+        price_frac = prod.discount_price / prod.original_price if prod.original_price > 0 else 1.0
+        records.append({
+            "discount_pct": discount_pct,
+            "price_frac": price_frac,
+            "days_left": 0.0,
+            "quantity": float(prod.quantity),
+            "category_demand": category_demand_map.get(prod.category.value if hasattr(prod.category, "value") else str(prod.category), 0.6),
+            "label": 0
+        })
+        
+    synthetic_anchors = [
+        {"discount_pct": 0.70, "price_frac": 0.30, "days_left": 1.0, "quantity": 5.0, "category_demand": 0.8, "label": 1},
+        {"discount_pct": 0.50, "price_frac": 0.50, "days_left": 3.0, "quantity": 10.0, "category_demand": 0.8, "label": 1},
+        {"discount_pct": 0.30, "price_frac": 0.70, "days_left": 7.0, "quantity": 20.0, "category_demand": 0.6, "label": 1},
+        {"discount_pct": 0.10, "price_frac": 0.90, "days_left": 12.0, "quantity": 15.0, "category_demand": 0.5, "label": 1},
+        {"discount_pct": 0.70, "price_frac": 0.30, "days_left": 0.0, "quantity": 8.0, "category_demand": 0.5, "label": 0},
+        {"discount_pct": 0.20, "price_frac": 0.80, "days_left": 0.5, "quantity": 25.0, "category_demand": 0.4, "label": 0},
+        {"discount_pct": 0.00, "price_frac": 1.00, "days_left": 0.0, "quantity": 10.0, "category_demand": 0.6, "label": 0},
+    ]
+    records.extend(synthetic_anchors)
+    
+    df = pd.DataFrame(records)
+    X_train = df[["discount_pct", "price_frac", "days_left", "quantity", "category_demand"]]
+    y_train = df["label"]
+    
+    clf = LogisticRegression(max_iter=1000)
+    clf.fit(X_train, y_train)
+    
+    accuracy = float(clf.score(X_train, y_train))
+    
+    weights = {
+        "discount_percent": round(float(clf.coef_[0][0]), 4),
+        "price_fraction": round(float(clf.coef_[0][1]), 4),
+        "days_left": round(float(clf.coef_[0][2]), 4),
+        "quantity": round(float(clf.coef_[0][3]), 4)
+    }
+    bias = round(float(clf.intercept_[0]), 4)
+    
+    return {
+        "weights": weights,
+        "bias": bias,
+        "sample_count": len(records),
+        "accuracy": round(accuracy, 2)
     }

@@ -26,8 +26,8 @@ def create_reservation(
             detail="Shop owners cannot make reservations."
         )
         
-    # Optimized query to load Product and Shop together
-    product = db.query(Product).options(joinedload(Product.shop)).filter(Product.id == res_in.product_id).first()
+    # Optimized query to load Product and Shop together with a write lock to prevent race conditions
+    product = db.query(Product).options(joinedload(Product.shop)).filter(Product.id == res_in.product_id).with_for_update().first()
     if not product or product.quantity < res_in.quantity:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, 

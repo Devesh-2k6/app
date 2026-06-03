@@ -9,7 +9,7 @@ from auth_service import get_current_shop_owner
 from db.models import User, Product, Shop, Reservation, ReservationStatus, Order, Review
 from db.session import get_db
 from routers.shops import _get_owner_shop
-from services.ml import generate_forecast_and_price_recommendation
+from services.ml import generate_forecast_and_price_recommendation, train_diagnostics_model
 
 router = APIRouter(prefix="/shops/me", tags=["Analytics"])
 
@@ -167,21 +167,8 @@ def get_shop_ml_diagnostics(
 ):
     shop = _get_owner_shop(user, db)
     
-    completed_orders = db.query(Order).filter(Order.shop_id == shop.id, Order.status == "DELIVERED").count()
-    completed_res = db.query(Reservation).filter(Reservation.shop_id == shop.id, Reservation.status == ReservationStatus.COMPLETED).count()
-    expired_products = db.query(Product).filter(Product.shop_id == shop.id, Product.expiry_date < datetime.now()).count()
-    
-    total_samples = completed_orders + completed_res + expired_products
-    sample_count = max(8, total_samples)
-    
-    weights = {
-        "discount_percent": 0.45,
-        "price_fraction": -0.25,
-        "days_left": 0.35,
-        "quantity": -0.15
-    }
-    
-    bias = -0.52
+    # Train the diagnostics model on the live database
+    diag = train_diagnostics_model(db)
     
     loss_history = [
         {"epoch": 0, "loss": 0.654},
@@ -198,12 +185,12 @@ def get_shop_ml_diagnostics(
     ]
     
     return {
-        "weights": weights,
-        "bias": bias,
+        "weights": diag["weights"],
+        "bias": diag["bias"],
         "epochs": 200,
         "learning_rate": 0.05,
-        "sample_count": sample_count,
+        "sample_count": diag["sample_count"],
         "loss_history": loss_history,
         "algorithm": "Multivariate Sigmoid Regression (Gradient Descent)",
-        "accuracy": 0.88
+        "accuracy": diag["accuracy"]
     }

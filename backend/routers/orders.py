@@ -115,7 +115,7 @@ def update_order_status(
         
     # Stock reduction logic: Reduce stock on Order Confirmation (ACCEPTED status transition)
     if new_status == "ACCEPTED" and order.status == "PENDING":
-        product = order.product
+        product = db.query(Product).filter(Product.id == order.product_id).with_for_update().first()
         if not product or product.quantity < order.quantity:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, 
