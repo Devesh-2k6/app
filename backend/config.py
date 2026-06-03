@@ -14,16 +14,16 @@ class Settings(BaseSettings):
     API_BASE_URL: str = Field(default="http://localhost:8000")
     
     # Database Settings
-    DATABASE_URL: str = Field(default="sqlite:///./freshsave_local_dev.db")
+    DATABASE_URL: str = Field(default="postgresql://postgres:Sureshkumar12345%40@db.hfdgntprwcdjazbikozb.supabase.co:5432/postgres")
     
     # Supabase (Postgres & Storage)
-    SUPABASE_URL: Optional[str] = Field(default=None)
+    SUPABASE_URL: Optional[str] = Field(default="https://hfdgntprwcdjazbikozb.supabase.co")
     SUPABASE_ANON_KEY: Optional[str] = Field(default=None)
     
     # External APIs
     OPENAI_API_KEY: Optional[str] = Field(default=None)
     GEMINI_API_KEY: Optional[str] = Field(default=None)
-    FAST2SMS_API_KEY: Optional[str] = Field(default=None)
+    FAST2SMS_API_KEY: Optional[str] = Field(default="8fHTV6AL1XChPg9apF6Cp9O2A0PWEygBiJzRnHzA9TN2l0YCsu5o9Yok4pFh")
     REDIS_URL: str = Field(default="redis://localhost:6379")
     
     # SMTP Notification Settings

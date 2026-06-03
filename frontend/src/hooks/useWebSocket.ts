@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { ApiProduct } from "@/types/product";
 
 // Connect to backend WebSocket based on current environment API URL
-const WS_URL = process.env.NEXT_PUBLIC_API_URL?.replace("http", "ws") || "ws://127.0.0.1:8000";
+const WS_URL = process.env.NEXT_PUBLIC_API_URL?.replace("http", "ws") || "wss://expirygo-iokl.onrender.com";
 
 type WSMessage = {
   type: string;
