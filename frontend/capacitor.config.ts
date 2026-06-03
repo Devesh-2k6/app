@@ -6,8 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'out',
   server: {
     androidScheme: 'https',
-    // Uncomment the url property below if you want the APK to load your live deployed website directly
-    // url: 'https://your-vercel-frontend-url.vercel.app',
+    url: 'https://app-yemk.onrender.com',
     cleartext: true
   },
   android: {
