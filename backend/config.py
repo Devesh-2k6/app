@@ -46,6 +46,18 @@ class Settings(BaseSettings):
             if isinstance(value, str):
                 cleaned = value.strip().strip('"').strip("'")
                 setattr(self, field_name, cleaned)
+        
+        # Fix common project ID typos from Render environment variables
+        if self.DATABASE_URL and "db.htdgntprwcdjazbikozb.supabase.co" in self.DATABASE_URL:
+            self.DATABASE_URL = self.DATABASE_URL.replace(
+                "db.htdgntprwcdjazbikozb.supabase.co",
+                "db.hfdgntprwcdjazbikozb.supabase.co"
+            )
+        if self.SUPABASE_URL and "htdgntprwcdjazbikozb.supabase.co" in self.SUPABASE_URL:
+            self.SUPABASE_URL = self.SUPABASE_URL.replace(
+                "htdgntprwcdjazbikozb.supabase.co",
+                "hfdgntprwcdjazbikozb.supabase.co"
+            )
         return self
 
     model_config = SettingsConfigDict(
