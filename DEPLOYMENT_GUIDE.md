@@ -78,6 +78,47 @@ This guide walks you through deploying the complete ExpiryGo app online (Vercel 
 
 ---
 
+## **🔑 Environment Variables Reference**
+
+Here is a breakdown of the key external integrations used by the backend and why they are needed:
+
+### 1. Supabase (Storage/Database)
+* **Why it's needed:** Supabase provides PostgreSQL for your production database, but more importantly, it is used for file storage (saving images of scanned products).
+* **Keys Used:** 
+  * `SUPABASE_URL`
+  * `SUPABASE_ANON_KEY`
+
+### 2. OpenAI (Vision AI)
+* **Why it's needed:** Used to process images (like scanning expiration dates and reading labels from uploaded packages).
+* **Key Used:** 
+  * `OPENAI_API_KEY`
+
+### 3. Google Gemini (AI Optimization)
+* **Why it's needed:** Your backend uses Gemini AI to optimize product details, categorize items, or generate better descriptions.
+* **Key Used:** 
+  * `GEMINI_API_KEY`
+
+### 4. Fast2SMS (SMS Service)
+* **Why it's needed:** This is an Indian SMS gateway used to dispatch OTPs (One Time Passwords) to users' mobile phones for login or verification.
+* **Key Used:** 
+  * `FAST2SMS_API_KEY`
+
+### 5. SMTP Provider (e.g., Gmail)
+* **Why it's needed:** Allows your application to send outbound email notifications (like "Your product is expiring soon!").
+* **Keys Used:** 
+  * `SMTP_HOST`
+  * `SMTP_PORT`
+  * `SMTP_USER`
+  * `SMTP_PASSWORD`
+
+### 6. Redis (Local or Cloud Cache)
+* **Why it's needed:** Redis is used for fast caching (e.g., storing active OTPs temporarily, caching frequent database queries, or WebSocket pub/sub).
+* **Key Used:** 
+  * `REDIS_URL=redis://localhost:6379` (Requires a Redis server running on your machine/production cloud)
+
+---
+
+
 ## **STEP 4: Deploy Frontend to Vercel**
 
 1. Go to: https://vercel.com
