@@ -2,7 +2,7 @@ import uuid
 import os
 import shutil
 from typing import Optional
-from fastapi import UploadFile
+from fastapi import UploadFile, Request
 from supabase import create_client, Client
 from config import settings
 
@@ -15,7 +15,7 @@ def get_supabase_client() -> Optional[Client]:
         return None
     return create_client(url, key)
 
-def upload_product_image(file: UploadFile) -> str:
+def upload_product_image(file: UploadFile, request: Optional[Request] = None) -> str:
     file_ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
     file_name = f"{uuid.uuid4()}.{file_ext}"
 
@@ -50,7 +50,11 @@ def upload_product_image(file: UploadFile) -> str:
             shutil.copyfileobj(file.file, buffer)
             
         # Return local static URL
-        return f"{settings.API_BASE_URL}/static/uploads/{file_name}"
+        base_url = settings.API_BASE_URL
+        if request:
+            base_url = str(request.base_url).rstrip("/")
+            
+        return f"{base_url}/static/uploads/{file_name}"
     except Exception as e:
         print(f"Error saving image locally: {str(e)}")
         return f"https://placehold.co/400x300/e2e8f0/64748b?text=Image+Unavailable"

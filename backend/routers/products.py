@@ -2,7 +2,7 @@ import math
 import logging
 from datetime import datetime, UTC
 from typing import Annotated, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
 from fastapi_cache.decorator import cache
 from sqlalchemy.orm import Session, contains_eager, joinedload
 
@@ -418,12 +418,13 @@ def get_product_ai_insight(
 
 @upload_router.post("/upload/image")
 def upload_image(
+    request: Request,
     file: UploadFile = File(...),
     user: User = Depends(get_current_shop_owner)
 ):
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File must be an image")
-    url = upload_product_image(file)
+    url = upload_product_image(file, request)
     return {"url": url}
 
 
@@ -465,7 +466,7 @@ async def create_product(
     
     # Calculate days until expiry
     now = datetime.now(UTC).replace(tzinfo=None)
-    days_left = (product_in.expiry_date - now).days
+    days_left = (product_in.expiry_date.date() - now.date()).days
     
     # Auto-calculate discount based on days left (unless override is provided)
     if product_in.discount_price is not None:
@@ -566,7 +567,7 @@ def update_product(
         discount_price = product_in.discount_price
     else:
         now = datetime.now(UTC).replace(tzinfo=None)
-        days_left = (product_in.expiry_date - now).days
+        days_left = (product_in.expiry_date.date() - now.date()).days
         discount_price = _calculate_automatic_discount(product_in.original_price, days_left)
 
     product.name = product_in.name

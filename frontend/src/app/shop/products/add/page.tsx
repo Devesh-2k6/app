@@ -119,10 +119,12 @@ export default function AddProductPage() {
     if (isNaN(mrp) || mrp <= 0 || !expiryDate) return null;
     
     try {
-      const expDate = new Date(expiryDate + "T23:59:59");
-      const now = new Date();
-      const diffTime = expDate.getTime() - now.getTime();
-      const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const expDate = new Date(expiryDate);
+      expDate.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const diffTime = expDate.getTime() - today.getTime();
+      const daysLeft = Math.round(diffTime / (1000 * 60 * 60 * 24));
       
       let discountPercent = 0;
       if (daysLeft <= 2) {

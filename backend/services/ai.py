@@ -1,6 +1,7 @@
 import json
 import httpx
 import base64
+import math
 from datetime import datetime, timedelta
 from config import settings
 
@@ -45,7 +46,7 @@ async def optimize_product_details(
         except Exception:
             expiry_date = datetime.now()
             
-    days_left = (expiry_date - datetime.now()).days
+    days_left = (expiry_date.date() - datetime.now().date()).days
     
     # Determine discount tier & percent
     if days_left <= 3:
